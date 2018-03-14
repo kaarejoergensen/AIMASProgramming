@@ -1,0 +1,15 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="AIMAS" type="JarApplication" factoryName="JAR Application">
+    <extension name="coverage" enabled="false" merge="false" sample_coverage="true" runner="idea" />
+    <option name="JAR_PATH" value="$PROJECT_DIR$/out/artifacts/AIMAS/server.jar" />
+    <option name="PROGRAM_PARAMETERS" value="-l levels/SAsokobanLevel96.lvl -c &quot;java sampleclients.GuiClient&quot; -g 200" />
+    <option name="WORKING_DIRECTORY" value="C:\Users\Kaare\IdeaProjects\AIMASProgramming\out\artifacts\AIMAS" />
+    <option name="ALTERNATIVE_JRE_PATH" />
+    <envs />
+    <method>
+      <option name="BuildArtifacts" enabled="true">
+        <artifact name="AIMAS" />
+      </option>
+    </method>
+  </configuration>
+</component>
