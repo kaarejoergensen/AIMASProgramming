@@ -3,67 +3,106 @@ package searchclient;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 import searchclient.Strategy.*;
 import searchclient.Heuristic.*;
+import searchclient.model.Edge;
+import searchclient.model.Elements.Agent;
+import searchclient.model.Elements.Box;
+import searchclient.model.Elements.Goal;
+import searchclient.model.Graph;
+import searchclient.model.Node;
 
 public class SearchClient {
 
     public State initialState;
 
     public SearchClient(BufferedReader serverMessages) throws Exception {
-        // Read lines specifying colors
-        String line = serverMessages.readLine();
-        if (line.matches("^[a-z]+:\\s*[0-9A-Z](\\s*,\\s*[0-9A-Z])*\\s*$")) {
-            System.err.println("Error, client does not support colors.");
-            System.exit(1);
-        }
-
         int row = 0;
         int columns = 0;
         int rows = 0;
-        boolean agentFound = false;
 
         List<String> strings = new LinkedList<>();
+        Map<Character, String> colorMap = new HashMap<>();
 
+        String line = serverMessages.readLine();
         while (!line.equals("")) {
-            strings.add(line);
-            line = serverMessages.readLine();
-            if (line.length() > columns) {
-                columns = line.length();
+            if (line.matches("^[a-z]+:\\s*[0-9A-Z](\\s*,\\s*[0-9A-Z])*\\s*$")) {
+                line = line.replaceAll("\\s", "");
+                String[] colorSplit = line.split(":");
+                if (colorSplit.length != 2) {
+                    System.err.println("Color line not formatted properly! " + line);
+                    System.exit(1);
+                }
+                String color = colorSplit[0];
+                String[] ids = colorSplit[1].split(",");
+                for (String id : ids) {
+                    colorMap.put(id.charAt(0), color);
+                }
+            } else {
+                strings.add(line);
+                if (line.length() > columns) {
+                    columns = line.length();
+                }
+                rows++;
             }
-            rows++;
+            line = serverMessages.readLine();
         }
-        this.initialState = new State(null, columns, rows);
+        Node[][] tiles = new Node[rows][columns];
+        List<Node> nodes = new ArrayList<>();
+
         for (String string : strings) {
             for (int col = 0; col < string.length(); col++) {
                 char chr = string.charAt(col);
-
-                if (chr == '+') { // Wall.
-                    this.initialState.walls[row][col] = true;
-                } else if ('0' <= chr && chr <= '9') { // Agent.
-                    if (agentFound) {
-                        System.err.println("Error, not a single agent level");
+                if (chr != '+') {
+                    Node node = null;
+                    if ('0' <= chr && chr <= '9') {
+                        node = new Node(new Agent(chr, colorMap.get(chr)));
+                        node.getElements().add(new Goal('a'));
+                    } else if ('A' <= chr && chr <= 'Z') {
+                        node = new Node(new Box(chr, colorMap.get(chr)));
+                    } else if ('a' <= chr && chr <= 'z') {
+                        node = new Node(new Goal(chr));
+                    } else if (chr == ' '){
+                        node = new Node();
+                    } else {
+                        System.err.println("Error, read invalid level character: " + (int) chr);
                         System.exit(1);
                     }
-                    agentFound = true;
-                    this.initialState.agentRow = row;
-                    this.initialState.agentCol = col;
-                } else if ('A' <= chr && chr <= 'Z') { // Box.
-                    this.initialState.boxes[row][col] = chr;
-                } else if ('a' <= chr && chr <= 'z') { // Goal.
-                    this.initialState.goals[row][col] = chr;
-                } else if (chr == ' ') {
-                    // Free space.
-                } else {
-                    System.err.println("Error, read invalid level character: " + (int) chr);
-                    System.exit(1);
+                    nodes.add(node);
+                    tiles[row][col] = node;
+//                    if (tiles[row - 1][col] != null) {
+//                        node.getConnections().add(new Edge(tiles[row][col], tiles[row - 1][col]));
+//                        node.getConnections().add(new Edge(tiles[row - 1][col], tiles[row][col]));
+//                    } else if (tiles[row][col - 1] != null) {
+//                        node.getConnections().add(new Edge(tiles[row][col], tiles[row][col - 1]));
+//                        node.getConnections().add(new Edge(tiles[row][col - 1], tiles[row][col]));
+//                    }
                 }
             }
             row++;
         }
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < columns; j++) {
+                Node n = tiles[i][j];
+                if (n != null) {
+                    if (i > 0 && tiles[i - 1][j] != null) {
+                        n.getNeighbours().add(tiles[i - 1][j]);
+                    }
+                    if (i < rows - 1 && tiles[i + 1][j] != null) {
+                        n.getNeighbours().add(tiles[i + 1][j]);
+                    }
+                    if (j > 0 && tiles[i][j - 1] != null) {
+                        n.getNeighbours().add(tiles[i][j - 1]);
+                    }
+                    if (j < columns - 1 && tiles[i][j + 1] != null) {
+                        n.getNeighbours().add(tiles[i][j + 1]);
+                    }
+                }
+            }
+        }
+        Graph graph = new Graph(nodes);
 
     }
 
