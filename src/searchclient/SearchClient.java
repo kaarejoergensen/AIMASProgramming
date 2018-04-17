@@ -3,15 +3,11 @@ package searchclient;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
 
 import searchclient.Strategy.*;
 import searchclient.Heuristic.*;
-import searchclient.model.Edge;
-import searchclient.model.Graph;
-import searchclient.model.Node;
 
 public class SearchClient {
 
@@ -25,12 +21,10 @@ public class SearchClient {
             System.exit(1);
         }
 
-        List<Node> nodes = new ArrayList<>();
-        List<Edge> edges = new ArrayList<>();
-
         int row = 0;
         int columns = 0;
         int rows = 0;
+        boolean agentFound = false;
 
         List<String> strings = new LinkedList<>();
 
@@ -42,44 +36,35 @@ public class SearchClient {
             }
             rows++;
         }
-
-        Node[][] tiles = new Node[rows][columns];
-
+        this.initialState = new State(null, columns, rows);
         for (String string : strings) {
             for (int col = 0; col < string.length(); col++) {
                 char chr = string.charAt(col);
-                if (chr != '+') {
-                    Node node = new Node(String.valueOf(nodes.size() + 1), chr, col, row);
-                    nodes.add(node);
-                    tiles[row][col] = node;
-                    if (tiles[row - 1][col] != null) {
-                        edges.add(new Edge(String.valueOf(edges.size() + 1), tiles[row][col], tiles[row - 1][col]));
-                        edges.add(new Edge(String.valueOf(edges.size() + 1), tiles[row - 1][col], tiles[row][col]));
-                    } else if (tiles[row][col - 1] != null) {
-                        edges.add(new Edge(String.valueOf(edges.size() + 1), tiles[row][col], tiles[row][col - 1]));
-                        edges.add(new Edge(String.valueOf(edges.size() + 1), tiles[row][col - 1], tiles[row][col]));
+
+                if (chr == '+') { // Wall.
+                    this.initialState.walls[row][col] = true;
+                } else if ('0' <= chr && chr <= '9') { // Agent.
+                    if (agentFound) {
+                        System.err.println("Error, not a single agent level");
+                        System.exit(1);
                     }
+                    agentFound = true;
+                    this.initialState.agentRow = row;
+                    this.initialState.agentCol = col;
+                } else if ('A' <= chr && chr <= 'Z') { // Box.
+                    this.initialState.boxes[row][col] = chr;
+                } else if ('a' <= chr && chr <= 'z') { // Goal.
+                    this.initialState.goals[row][col] = chr;
+                } else if (chr == ' ') {
+                    // Free space.
+                } else {
+                    System.err.println("Error, read invalid level character: " + (int) chr);
+                    System.exit(1);
                 }
             }
             row++;
         }
 
-        Graph graph = new Graph(nodes, edges);
-        Node agent = nodes.stream().filter(n -> n.getType() == '0').findFirst().get();
-        Node box = nodes.stream().filter(n -> n.getType() == 'A').findFirst().get();
-        Node goal = nodes.stream().filter(n -> n.getType() == 'a').findFirst().get();
-        Dijkstra dijkstra = new Dijkstra(graph);
-        dijkstra.execute(agent);
-        List<Node> path = dijkstra.getPath(box);
-        dijkstra.execute(box);
-        List<Node> path2 = dijkstra.getPath(goal);
-        for (Node node : path) {
-            System.err.println(node);
-        }
-        for (Node node : path2) {
-            System.err.println(node);
-        }
-        System.out.println("End");
     }
 
     public LinkedList<State> Search(Strategy strategy) throws IOException {
