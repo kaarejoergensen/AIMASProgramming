@@ -6,38 +6,48 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Node {
+    private int x;
+    private int y;
     private List<ColeredElement> elements;
-    private List<Node> neighbours;
 
-    public Node(ColeredElement element) {
+    public Node(int x, int y, ColeredElement element) {
+        this.x = x;
+        this.y = y;
         this.elements = new ArrayList<>();
         this.elements.add(element);
-        this.neighbours = new ArrayList<>();
     }
 
-    public Node(List<ColeredElement> elements) {
+    public Node(int x, int y, List<ColeredElement> elements) {
+        this.x = x;
+        this.y = y;
         this.elements = elements;
-        this.neighbours = new ArrayList<>();
     }
 
-    public Node() {
+    public Node(int x, int y) {
+        this.x = x;
+        this.y = y;
         this.elements = new ArrayList<>();
-        this.neighbours = new ArrayList<>();
     }
 
     public List<ColeredElement> getElements() {
         return elements;
     }
 
-    public void setElements(List<ColeredElement> elements) {
-        this.elements = elements;
+    public void addElement(ColeredElement element) {
+        if (!elements.contains(element)) {
+            elements.add(element);
+        }
     }
 
-    public List<Node> getNeighbours() {
-        return neighbours;
+    public void removeElement(ColeredElement element) {
+        elements.remove(element);
     }
 
-    public void setNeighbours(List<Node> neighbours) {
-        this.neighbours = neighbours;
+    public int getX() {
+        return x;
+    }
+
+    public int getY() {
+        return y;
     }
 }

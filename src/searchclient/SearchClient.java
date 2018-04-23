@@ -1,27 +1,29 @@
 package searchclient;
 
+import searchclient.Heuristic.AStar;
+import searchclient.Heuristic.Greedy;
+import searchclient.Heuristic.WeightedAStar;
+import searchclient.Strategy.StrategyBFS;
+import searchclient.Strategy.StrategyBestFirst;
+import searchclient.Strategy.StrategyDFS;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.*;
-
-import searchclient.Strategy.*;
-import searchclient.Heuristic.*;
-import searchclient.model.Edge;
-import searchclient.model.Elements.Agent;
-import searchclient.model.Elements.Box;
-import searchclient.model.Elements.Goal;
-import searchclient.model.Graph;
-import searchclient.model.Node;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 public class SearchClient {
 
-    public State initialState;
+    private State initialState;
 
     public SearchClient(BufferedReader serverMessages) throws Exception {
         int row = 0;
         int columns = 0;
         int rows = 0;
+        int numberOfAgents = 0;
 
         List<String> strings = new LinkedList<>();
         Map<Character, String> colorMap = new HashMap<>();
@@ -49,61 +51,59 @@ public class SearchClient {
             }
             line = serverMessages.readLine();
         }
-        Node[][] tiles = new Node[rows][columns];
-        List<Node> nodes = new ArrayList<>();
+        boolean[][] walls = new boolean[rows][columns];
+        char[][] boxes = new char[rows][columns];
+        char[][] goals = new char[rows][columns];
+        char[][] agents = new char[rows][columns];
 
         for (String string : strings) {
             for (int col = 0; col < string.length(); col++) {
                 char chr = string.charAt(col);
-                if (chr != '+') {
-                    Node node = null;
-                    if ('0' <= chr && chr <= '9') {
-                        node = new Node(new Agent(chr, colorMap.get(chr)));
-                        node.getElements().add(new Goal('a'));
-                    } else if ('A' <= chr && chr <= 'Z') {
-                        node = new Node(new Box(chr, colorMap.get(chr)));
-                    } else if ('a' <= chr && chr <= 'z') {
-                        node = new Node(new Goal(chr));
-                    } else if (chr == ' '){
-                        node = new Node();
-                    } else {
-                        System.err.println("Error, read invalid level character: " + (int) chr);
-                        System.exit(1);
-                    }
-                    nodes.add(node);
-                    tiles[row][col] = node;
-//                    if (tiles[row - 1][col] != null) {
-//                        node.getConnections().add(new Edge(tiles[row][col], tiles[row - 1][col]));
-//                        node.getConnections().add(new Edge(tiles[row - 1][col], tiles[row][col]));
-//                    } else if (tiles[row][col - 1] != null) {
-//                        node.getConnections().add(new Edge(tiles[row][col], tiles[row][col - 1]));
-//                        node.getConnections().add(new Edge(tiles[row][col - 1], tiles[row][col]));
-//                    }
+
+                if (chr == '+') { // Wall.
+                    walls[row][col] = true;
+                } else if ('0' <= chr && chr <= '9') { // Agent.
+                    agents[row][col] = chr;
+                    numberOfAgents++;
+                } else if ('A' <= chr && chr <= 'Z') { // Box.
+                    boxes[row][col] = chr;
+                } else if ('a' <= chr && chr <= 'z') { // Goal.
+                    goals[row][col] = chr;
+                } else if (chr != ' ') {
+                    System.err.println("Error, read invalid level character: " + (int) chr);
+                    System.exit(1);
                 }
             }
             row++;
         }
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < columns; j++) {
-                Node n = tiles[i][j];
-                if (n != null) {
-                    if (i > 0 && tiles[i - 1][j] != null) {
-                        n.getNeighbours().add(tiles[i - 1][j]);
-                    }
-                    if (i < rows - 1 && tiles[i + 1][j] != null) {
-                        n.getNeighbours().add(tiles[i + 1][j]);
-                    }
-                    if (j > 0 && tiles[i][j - 1] != null) {
-                        n.getNeighbours().add(tiles[i][j - 1]);
-                    }
-                    if (j < columns - 1 && tiles[i][j + 1] != null) {
-                        n.getNeighbours().add(tiles[i][j + 1]);
-                    }
-                }
-            }
-        }
-        Graph graph = new Graph(nodes);
 
+        this.initialState = new State(null, columns, rows, numberOfAgents, colorMap, walls, boxes, goals, agents);
+
+//        Node[][] tiles = new Node[rows][columns];
+//
+//        for (String string : strings) {
+//            for (int col = 0; col < string.length(); col++) {
+//                char chr = string.charAt(col);
+//                if (chr != '+') {
+//                    Node node = null;
+//                    if ('0' <= chr && chr <= '9') {
+//                        node = new Node(row, col, new Agent(chr, colorMap.get(chr)));
+//                    } else if ('A' <= chr && chr <= 'Z') {
+//                        node = new Node(row, col, new Box(chr, colorMap.get(chr)));
+//                    } else if ('a' <= chr && chr <= 'z') {
+//                        node = new Node(row, col, new Goal(chr));
+//                    } else if (chr == ' '){
+//                        node = new Node(row, col);
+//                    } else {
+//                        System.err.println("Error, read invalid level character: " + (int) chr);
+//                        System.exit(1);
+//                    }
+//                    tiles[row][col] = node;
+//                }
+//            }
+//            row++;
+//        }
+//        Graph graph = new Graph(null, tiles);
     }
 
     public LinkedList<State> Search(Strategy strategy) throws IOException {
@@ -170,8 +170,8 @@ public class SearchClient {
                     System.err.println("Defaulting to BFS search. Use arguments -bfs, -dfs, -astar, -wastar, or -greedy to set the search strategy.");
             }
         } else {
-            strategy = new StrategyBFS();
-            System.err.println("Defaulting to BFS search. Use arguments -bfs, -dfs, -astar, -wastar, or -greedy to set the search strategy.");
+            strategy = new StrategyBestFirst(new Greedy(client.initialState));
+            System.err.println("Defaulting to greedy search. Use arguments -bfs, -dfs, -astar, -wastar, or -greedy to set the search strategy.");
         }
 
         LinkedList<State> solution;
@@ -192,15 +192,14 @@ public class SearchClient {
             System.err.println(strategy.searchStatus());
 
             for (State n : solution) {
-                String act = n.action.toString();
-                System.out.println(act);
-                String response = serverMessages.readLine();
-                if (response.contains("false")) {
-                    System.err.format("Server responsed with %s to the inapplicable action: %s\n", response, act);
-                    System.err.format("%s was attempted in \n%s\n", act, n.toString());
-                    break;
+                StringBuilder act = new StringBuilder("[");
+                for (Command cmd : n.getActions()) {
+                    act.append(cmd).append(",");
                 }
-            }
+                act.setLength(act.length() - 1);
+                act.append("]");
+                System.out.println(act);
+             }
         }
     }
 }
