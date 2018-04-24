@@ -3,6 +3,7 @@ package searchclient;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -12,6 +13,7 @@ import searchclient.Heuristic.*;
 public class SearchClient {
 
     public State initialState;
+    public HashMap<Character, Integer> goalPriorites;
 
     public SearchClient(BufferedReader serverMessages) throws Exception {
         // Read lines specifying colors
