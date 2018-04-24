@@ -17,6 +17,7 @@ import java.util.Map;
 
 public class SearchClient {
 
+
     private State initialState;
 
     public SearchClient(BufferedReader serverMessages) throws Exception {
