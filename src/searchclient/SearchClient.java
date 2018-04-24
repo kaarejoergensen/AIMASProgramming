@@ -112,7 +112,7 @@ public class SearchClient {
 
         int iterations = 0;
         while (true) {
-            if (iterations == 1000) {
+            if (iterations == 10) {
                 System.err.println(strategy.searchStatus());
                 iterations = 0;
             }
@@ -127,8 +127,17 @@ public class SearchClient {
                 return leafState.extractPlan();
             }
 
+/*            System.out.println(leafState.actionsToString());
+            System.out.println(leafState);
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+*/
             strategy.addToExplored(leafState);
-            for (State n : leafState.getExpandedStates()) { // The list of expanded States is shuffled randomly; see State.java.
+            List<State> expanded = leafState.test();
+            for (State n : expanded) { // The list of expanded States is shuffled randomly; see State.java.
                 if (!strategy.isExplored(n) && !strategy.inFrontier(n)) {
                     strategy.addToFrontier(n);
                 }

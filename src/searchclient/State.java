@@ -2,10 +2,7 @@ package searchclient;
 
 import searchclient.Command.Type;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.Map;
+import java.util.*;
 
 public class State {
     private State parent;
@@ -33,9 +30,6 @@ public class State {
         this.rows = rows;
         this.numberOfAgents = numberOfAgents;
         actions = new Command[numberOfAgents];
-        for (int i = 0; i < actions.length; i++) {
-            actions[i] = new Command();
-        }
 
         this.colorMap = colormap;
 
@@ -71,70 +65,102 @@ public class State {
         return true;
     }
 
-    public ArrayList<State> getExpandedStates() {
-        ArrayList<State> expandedStates = new ArrayList<>(Command.EVERY.length);
-        for (Command c : Command.EVERY) {
-            for (int row = 1; row < rows - 1; row++) {
-                for (int col = 1; col < columns - 1; col++) {
-                    if (agents[row][col] > 0) {
-                        char agent = agents[row][col];
-                        int newAgentRow = row + Command.dirToRowChange(c.dir1);
-                        int newAgentCol = col + Command.dirToColChange(c.dir1);
-                        Command action = null;
-                        int newBoxRow = -1, newBoxCol = -1, oldBoxRow = -1, oldBoxCol = -1;
+    private boolean isCommandPossible(Command c, int row, int col) {
+        char agent = this.agents[row][col];
+        int newAgentRow = row + Command.dirToRowChange(c.dir1);
+        int newAgentCol = col + Command.dirToColChange(c.dir1);
 
-                        if (c.actionType == Type.Move) {
-                            if (this.cellIsFree(newAgentRow, newAgentCol, agent)) {
-                                action = c;
-                            }
-                        } else if (c.actionType == Type.Push) {
-                            if (this.boxAt(newAgentRow, newAgentCol) &&
-                                    this.boxAndAgentSameColor(this.boxes[newAgentRow][newAgentCol], agent)) {
-                                int boxRow = newAgentRow + Command.dirToRowChange(c.dir2);
-                                int boxCol = newAgentCol + Command.dirToColChange(c.dir2);
-                                if (this.cellIsFree(boxRow, boxCol, agent)) {
-                                    action = c;
-                                    newBoxRow = boxRow;
-                                    newBoxCol = boxCol;
-                                    oldBoxRow = newAgentRow;
-                                    oldBoxCol = newAgentCol;
+        if (c.actionType == Type.Move) {
+            return this.cellIsFree(newAgentRow, newAgentCol, agent);
+        } else if (c.actionType == Type.Push) {
+            if (this.boxAt(newAgentRow, newAgentCol) &&
+                    this.boxAndAgentSameColor(this.boxes[newAgentRow][newAgentCol], agent)) {
+                int boxRow = newAgentRow + Command.dirToRowChange(c.dir2);
+                int boxCol = newAgentCol + Command.dirToColChange(c.dir2);
+                return this.cellIsFree(boxRow, boxCol, agent);
+            }
+        } else if (c.actionType == Type.Pull) {
+            if (this.cellIsFree(newAgentRow, newAgentCol, agent)) {
+                int boxRow = row + Command.dirToRowChange(c.dir2);
+                int boxCol = col + Command.dirToColChange(c.dir2);
+                return this.boxAt(boxRow, boxCol) &&
+                        this.boxAndAgentSameColor(this.boxes[boxRow][boxCol], agent);
+            }
+        } else return c.actionType == Type.NoOp;
+        return false;
+    }
+
+    public String actionsToString() {
+        StringBuilder act = new StringBuilder("[");
+        for (Command cmd : this.actions) {
+            act.append(cmd).append(",");
+        }
+        act.setLength(act.length() - 1);
+        act.append("]");
+        return act.toString();
+    }
+
+    public List<State> test() {
+        List<State> result = this.ChildState().recursiveTest();
+        result.forEach(s -> s.parent = this);
+        System.out.println(result.size());
+        return result;
+    }
+
+    public List<State> recursiveTest() {
+        List<State> result = new ArrayList<>();
+
+        for (int i = 0; i < this.actions.length; i++) {
+            if (this.actions[i] == null) {
+                for (int row = 1; row < rows - 1; row++) {
+                    for (int col = 1; col < columns - 1; col++) {
+                        if (agents[row][col] > 0 && Character.getNumericValue(agents[row][col]) == i) {
+                            for (Command c : Command.EVERY) {
+                                if (isCommandPossible(c, row, col)) {
+                                    char agent = agents[row][col];
+                                    int newAgentRow = row + Command.dirToRowChange(c.dir1);
+                                    int newAgentCol = col + Command.dirToColChange(c.dir1);
+                                    State n = this.ChildStateWithActions();
+                                    n.parent = null;
+                                    n.actions[i] = c;
+                                    if (c.actionType != Type.NoOp) {
+                                        n.agents[newAgentRow][newAgentCol] = agent;
+                                        n.agents[row][col] = 0;
+                                        if (c.actionType == Type.Push) {
+                                            int boxRow = newAgentRow + Command.dirToRowChange(c.dir2);
+                                            int boxCol = newAgentCol + Command.dirToColChange(c.dir2);
+                                            n.boxes[boxRow][boxCol] = this.boxes[newAgentRow][newAgentCol];
+                                            n.boxes[newAgentRow][newAgentCol] = 0;
+                                        } else if (c.actionType == Type.Pull) {
+                                            int boxRow = row + Command.dirToRowChange(c.dir2);
+                                            int boxCol = col + Command.dirToColChange(c.dir2);
+                                            n.boxes[row][col] = this.boxes[boxRow][boxCol];
+                                            n.boxes[boxRow][boxCol] = 0;
+                                        }
+                                    }
+                                    if (Arrays.stream(n.actions).anyMatch(Objects::isNull)) {
+                                        result.addAll(n.recursiveTest());
+                                    } else {
+                                        result.add(n);
+                                    }
                                 }
                             }
-                        } else if (c.actionType == Type.Pull) {
-                            if (this.cellIsFree(newAgentRow, newAgentCol, agent)) {
-                                int boxRow = row + Command.dirToRowChange(c.dir2);
-                                int boxCol = col + Command.dirToColChange(c.dir2);
-                                if (this.boxAt(boxRow, boxCol) &&
-                                        this.boxAndAgentSameColor(this.boxes[boxRow][boxCol], agent)) {
-                                    action = c;
-                                    newBoxRow = row;
-                                    newBoxCol = col;
-                                    oldBoxRow = boxRow;
-                                    oldBoxCol = boxCol;
-                                }
-                            }
-                        }
-
-                        if (action != null) {
-                            State n = this.ChildState();
-                            n.actions[Character.getNumericValue(agent)] = action;
-                            n.agents[newAgentRow][newAgentCol] = agent;
-                            n.agents[row][col] = 0;
-                            if (newBoxCol != -1 && newBoxRow != -1) {
-                                n.boxes[newBoxRow][newBoxCol] = this.boxes[oldBoxRow][oldBoxCol];
-                                n.boxes[oldBoxRow][oldBoxCol] = 0;
-                            }
-                            expandedStates.add(n);
                         }
                     }
                 }
             }
         }
-        return expandedStates;
+        return result;
+    }
+
+    private State ChildStateWithActions() {
+        State state = this.ChildState();
+        System.arraycopy(this.actions, 0, state.actions, 0, this.actions.length);
+        return state;
     }
 
     private boolean cellIsFree(int row, int col, char agent) {
-        return !this.walls[row][col] && this.boxes[row][col] == 0 && (this.agents[row][col] == 0 || this.agents[row][col]==agent);
+        return !this.walls[row][col] && this.boxes[row][col] == 0 && (this.agents[row][col] == 0 || this.agents[row][col] == agent);
     }
 
     private boolean boxAt(int row, int col) {

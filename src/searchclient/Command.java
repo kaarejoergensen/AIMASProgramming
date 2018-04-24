@@ -33,6 +33,8 @@ public class Command {
             cmds.add(new Command(d));
         }
 
+        cmds.add(new Command());
+
         EVERY = cmds.toArray(new Command[0]);
     }
 
@@ -41,6 +43,9 @@ public class Command {
     }
 
     public static int dirToRowChange(Dir d) {
+        if (d == null) {
+            return 0;
+        }
         // South is down one row (1), north is up one row (-1).
         switch (d) {
             case S:
@@ -53,6 +58,9 @@ public class Command {
     }
 
     public static int dirToColChange(Dir d) {
+        if (d == null) {
+            return 0;
+        }
         // East is right one column (1), west is left one column (-1).
         switch (d) {
             case E:

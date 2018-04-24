@@ -6,27 +6,27 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Node {
-    private int x;
-    private int y;
+    private String id;
     private List<ColeredElement> elements;
+    private List<Edge> edges;
 
-    public Node(int x, int y, ColeredElement element) {
-        this.x = x;
-        this.y = y;
+    public Node(String id, ColeredElement element) {
+        this.id = id;
         this.elements = new ArrayList<>();
         this.elements.add(element);
+        this.edges = new ArrayList<>();
     }
 
-    public Node(int x, int y, List<ColeredElement> elements) {
-        this.x = x;
-        this.y = y;
+    public Node(String id, List<ColeredElement> elements) {
+        this.id = id;
         this.elements = elements;
+        this.edges = new ArrayList<>();
     }
 
-    public Node(int x, int y) {
-        this.x = x;
-        this.y = y;
+    public Node(String id) {
+        this.id = id;
         this.elements = new ArrayList<>();
+        this.edges = new ArrayList<>();
     }
 
     public List<ColeredElement> getElements() {
@@ -43,11 +43,15 @@ public class Node {
         elements.remove(element);
     }
 
-    public int getX() {
-        return x;
+    public String getId() {
+        return id;
     }
 
-    public int getY() {
-        return y;
+    public List<Edge> getEdges() {
+        return edges;
+    }
+
+    public void addEdge(Edge edge) {
+        this.edges.add(edge);
     }
 }
