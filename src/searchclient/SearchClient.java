@@ -6,14 +6,18 @@ import searchclient.Heuristic.WeightedAStar;
 import searchclient.Strategy.StrategyBFS;
 import searchclient.Strategy.StrategyBestFirst;
 import searchclient.Strategy.StrategyDFS;
+import searchclient.model.Edge;
+import searchclient.model.Elements.Agent;
+import searchclient.model.Elements.Box;
+import searchclient.model.Elements.Goal;
+import searchclient.model.Graph;
+import searchclient.model.Node;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class SearchClient {
 
@@ -24,7 +28,6 @@ public class SearchClient {
         int row = 0;
         int columns = 0;
         int rows = 0;
-        int numberOfAgents = 0;
 
         List<String> strings = new LinkedList<>();
         Map<Character, String> colorMap = new HashMap<>();
@@ -52,7 +55,7 @@ public class SearchClient {
             }
             line = serverMessages.readLine();
         }
-        boolean[][] walls = new boolean[rows][columns];
+        /*boolean[][] walls = new boolean[rows][columns];
         char[][] boxes = new char[rows][columns];
         char[][] goals = new char[rows][columns];
         char[][] agents = new char[rows][columns];
@@ -78,33 +81,46 @@ public class SearchClient {
             row++;
         }
 
-        this.initialState = new State(null, columns, rows, numberOfAgents, colorMap, walls, boxes, goals, agents);
+        this.initialState = new State(null, columns, rows, numberOfAgents, colorMap, walls, boxes, goals, agents);*/
 
-//        Node[][] tiles = new Node[rows][columns];
-//
-//        for (String string : strings) {
-//            for (int col = 0; col < string.length(); col++) {
-//                char chr = string.charAt(col);
-//                if (chr != '+') {
-//                    Node node = null;
-//                    if ('0' <= chr && chr <= '9') {
-//                        node = new Node(row, col, new Agent(chr, colorMap.get(chr)));
-//                    } else if ('A' <= chr && chr <= 'Z') {
-//                        node = new Node(row, col, new Box(chr, colorMap.get(chr)));
-//                    } else if ('a' <= chr && chr <= 'z') {
-//                        node = new Node(row, col, new Goal(chr));
-//                    } else if (chr == ' '){
-//                        node = new Node(row, col);
-//                    } else {
-//                        System.err.println("Error, read invalid level character: " + (int) chr);
-//                        System.exit(1);
-//                    }
-//                    tiles[row][col] = node;
-//                }
-//            }
-//            row++;
-//        }
-//        Graph graph = new Graph(null, tiles);
+        Node[][] tiles = new Node[rows][columns];
+
+        for (String string : strings) {
+            for (int col = 0; col < string.length(); col++) {
+                char chr = string.charAt(col);
+                if (chr != '+') {
+                    Node node = null;
+                    if ('0' <= chr && chr <= '9') {
+                        node = new Node(col, row, new Agent(chr, colorMap.get(chr)));
+                    } else if ('A' <= chr && chr <= 'Z') {
+                        node = new Node(col, row, new Box(chr, colorMap.get(chr)));
+                    } else if ('a' <= chr && chr <= 'z') {
+                        node = new Node(col, row, new Goal(chr));
+                    } else if (chr == ' '){
+                        node = new Node(col, row);
+                    } else {
+                        System.err.println("Error, read invalid level character: " + (int) chr);
+                        System.exit(1);
+                    }
+                    tiles[row][col] = node;
+                    if (tiles[row - 1][col] != null) {
+                        node.addEdge(new Edge(node, tiles[row - 1][col]));
+                        tiles[row - 1][col].addEdge(new Edge(tiles[row - 1][col], node));
+                    }
+                    if (tiles[row][col - 1] != null) {
+                        node.addEdge(new Edge(node, tiles[row][col - 1]));
+                        tiles[row][col - 1].addEdge(new Edge(tiles[row][col - 1], node));
+                    }
+                }
+            }
+            row++;
+        }
+        List<Node> nodes = Arrays.stream(tiles).flatMap(Arrays::stream).filter(Objects::nonNull).collect(Collectors.toList());
+        Graph graph = new Graph(null, nodes);
+        List<Node> shortestPath = graph.shortestPath(graph.getAgentNodes().get(0), graph.getBoxNodes().get(0));
+        Graph secondGraph = graph.childState();
+        secondGraph.moveAgent(secondGraph.getAgentNodes().get(0), secondGraph.getAllNodes().get(0));
+
     }
 
     public LinkedList<State> Search(Strategy strategy) throws IOException {
