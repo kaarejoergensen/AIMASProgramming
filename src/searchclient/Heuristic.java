@@ -13,16 +13,21 @@ public abstract class Heuristic implements Comparator<State> {
 
         List<Location> boxes = new LinkedList<>();
         List<Location> goals = new LinkedList<>();
+        List<Location> agents = new LinkedList<>();
 
-        for (int row = 1; row < n.rows - 1; row ++) {
-            for (int col = 1; col < n.columns - 1; col++) {
-                char g = n.goals[row][col];
-                char b = Character.toLowerCase(n.boxes[row][col]);
+        for (int row = 1; row < n.getRows() - 1; row ++) {
+            for (int col = 1; col < n.getColumns() - 1; col++) {
+                char g = n.getGoals()[row][col];
+                char b = n.getBoxes()[row][col];
+                char a = n.getAgents()[row][col];
                 if (g > 0) {
                     goals.add(new Location(row, col, g, Integer.MAX_VALUE));
                 }
                 if (b > 0) {
                     boxes.add(new Location(row, col, b, Integer.MAX_VALUE));
+                }
+                if (a > 0) {
+                    agents.add(new Location(row, col, a, Integer.MAX_VALUE));
                 }
             }
         }
@@ -31,7 +36,7 @@ public abstract class Heuristic implements Comparator<State> {
             Iterator<Location> itr = boxes.iterator();
             while (itr.hasNext()) {
                 Location box = itr.next();
-                if (goal.character == box.character) {
+                if (goal.character == Character.toLowerCase(box.character)) {
                     if (goal.x == box.x && goal.y == box.y) {
                         itr.remove();
                         break;
@@ -46,7 +51,12 @@ public abstract class Heuristic implements Comparator<State> {
         }
         for (Location box : boxes) {
             result += 100 * box.distance;
-            result += Math.abs((Math.sqrt(Math.pow(n.agentRow - box.x, 2) + Math.pow(n.agentCol - box.y, 2))) - 1);
+            for (Location agent : agents) {
+                if (n.getColor(box.character).equals(n.getColor(agent.character))) {
+                    result += Math.abs((Math.sqrt(Math.pow(agent.x - box.x, 2) + Math.pow(agent.y - box.y, 2))) - 1);
+                }
+
+            }
         }
         return result;
     }

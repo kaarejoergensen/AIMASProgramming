@@ -1,65 +1,76 @@
 package searchclient;
 
+import searchclient.Heuristic.AStar;
+import searchclient.Heuristic.Greedy;
+import searchclient.Heuristic.WeightedAStar;
+import searchclient.Strategy.StrategyBFS;
+import searchclient.Strategy.StrategyBestFirst;
+import searchclient.Strategy.StrategyDFS;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-
-import searchclient.Strategy.*;
-import searchclient.Heuristic.*;
+import java.util.Map;
 
 public class SearchClient {
 
-    public State initialState;
-    public HashMap<Character, Integer> goalPriorites;
+
+    private State initialState;
 
     public SearchClient(BufferedReader serverMessages) throws Exception {
-        // Read lines specifying colors
-        String line = serverMessages.readLine();
-        if (line.matches("^[a-z]+:\\s*[0-9A-Z](\\s*,\\s*[0-9A-Z])*\\s*$")) {
-            System.err.println("Error, client does not support colors.");
-            System.exit(1);
-        }
-
         int row = 0;
         int columns = 0;
         int rows = 0;
-        boolean agentFound = false;
+        int numberOfAgents = 0;
 
         List<String> strings = new LinkedList<>();
+        Map<Character, String> colorMap = new HashMap<>();
 
+        String line = serverMessages.readLine();
         while (!line.equals("")) {
-            strings.add(line);
-            line = serverMessages.readLine();
-            if (line.length() > columns) {
-                columns = line.length();
+            if (line.matches("^[a-z]+:\\s*[0-9A-Z](\\s*,\\s*[0-9A-Z])*\\s*$")) {
+                line = line.replaceAll("\\s", "");
+                String[] colorSplit = line.split(":");
+                if (colorSplit.length != 2) {
+                    System.err.println("Color line not formatted properly! " + line);
+                    System.exit(1);
+                }
+                String color = colorSplit[0];
+                String[] ids = colorSplit[1].split(",");
+                for (String id : ids) {
+                    colorMap.put(id.charAt(0), color);
+                }
+            } else {
+                strings.add(line);
+                if (line.length() > columns) {
+                    columns = line.length();
+                }
+                rows++;
             }
-            rows++;
+            line = serverMessages.readLine();
         }
-        this.initialState = new State(null, columns, rows);
+        boolean[][] walls = new boolean[rows][columns];
+        char[][] boxes = new char[rows][columns];
+        char[][] goals = new char[rows][columns];
+        char[][] agents = new char[rows][columns];
+
         for (String string : strings) {
             for (int col = 0; col < string.length(); col++) {
                 char chr = string.charAt(col);
 
                 if (chr == '+') { // Wall.
-                    this.initialState.walls[row][col] = true;
+                    walls[row][col] = true;
                 } else if ('0' <= chr && chr <= '9') { // Agent.
-                    if (agentFound) {
-                        System.err.println("Error, not a single agent level");
-                        System.exit(1);
-                    }
-                    agentFound = true;
-                    this.initialState.agentRow = row;
-                    this.initialState.agentCol = col;
+                    agents[row][col] = chr;
+                    numberOfAgents++;
                 } else if ('A' <= chr && chr <= 'Z') { // Box.
-                    this.initialState.boxes[row][col] = chr;
+                    boxes[row][col] = chr;
                 } else if ('a' <= chr && chr <= 'z') { // Goal.
-                    this.initialState.goals[row][col] = chr;
-                } else if (chr == ' ') {
-                    // Free space.
-                } else {
+                    goals[row][col] = chr;
+                } else if (chr != ' ') {
                     System.err.println("Error, read invalid level character: " + (int) chr);
                     System.exit(1);
                 }
@@ -67,6 +78,33 @@ public class SearchClient {
             row++;
         }
 
+        this.initialState = new State(null, columns, rows, numberOfAgents, colorMap, walls, boxes, goals, agents);
+
+//        Node[][] tiles = new Node[rows][columns];
+//
+//        for (String string : strings) {
+//            for (int col = 0; col < string.length(); col++) {
+//                char chr = string.charAt(col);
+//                if (chr != '+') {
+//                    Node node = null;
+//                    if ('0' <= chr && chr <= '9') {
+//                        node = new Node(row, col, new Agent(chr, colorMap.get(chr)));
+//                    } else if ('A' <= chr && chr <= 'Z') {
+//                        node = new Node(row, col, new Box(chr, colorMap.get(chr)));
+//                    } else if ('a' <= chr && chr <= 'z') {
+//                        node = new Node(row, col, new Goal(chr));
+//                    } else if (chr == ' '){
+//                        node = new Node(row, col);
+//                    } else {
+//                        System.err.println("Error, read invalid level character: " + (int) chr);
+//                        System.exit(1);
+//                    }
+//                    tiles[row][col] = node;
+//                }
+//            }
+//            row++;
+//        }
+//        Graph graph = new Graph(null, tiles);
     }
 
     public LinkedList<State> Search(Strategy strategy) throws IOException {
@@ -133,8 +171,8 @@ public class SearchClient {
                     System.err.println("Defaulting to BFS search. Use arguments -bfs, -dfs, -astar, -wastar, or -greedy to set the search strategy.");
             }
         } else {
-            strategy = new StrategyBFS();
-            System.err.println("Defaulting to BFS search. Use arguments -bfs, -dfs, -astar, -wastar, or -greedy to set the search strategy.");
+            strategy = new StrategyBestFirst(new Greedy(client.initialState));
+            System.err.println("Defaulting to greedy search. Use arguments -bfs, -dfs, -astar, -wastar, or -greedy to set the search strategy.");
         }
 
         LinkedList<State> solution;
@@ -155,15 +193,14 @@ public class SearchClient {
             System.err.println(strategy.searchStatus());
 
             for (State n : solution) {
-                String act = n.action.toString();
-                System.out.println(act);
-                String response = serverMessages.readLine();
-                if (response.contains("false")) {
-                    System.err.format("Server responsed with %s to the inapplicable action: %s\n", response, act);
-                    System.err.format("%s was attempted in \n%s\n", act, n.toString());
-                    break;
+                StringBuilder act = new StringBuilder("[");
+                for (Command cmd : n.getActions()) {
+                    act.append(cmd).append(",");
                 }
-            }
+                act.setLength(act.length() - 1);
+                act.append("]");
+                System.out.println(act);
+             }
         }
     }
 }
