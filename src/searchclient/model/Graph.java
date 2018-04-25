@@ -11,6 +11,8 @@ import java.util.stream.Collectors;
 
 public class Graph {
     private Graph parent;
+    private int rows;
+    private int columns;
     private List<Node> allNodes;
     private List<Node> agentNodes;
     private List<Node> goalNodes;
@@ -19,16 +21,18 @@ public class Graph {
     private Command[] actions;
 
 
-    public Graph(Graph parent, List<Node> nodes) {
+    public Graph(Graph parent, int rows, int columns, List<Node> nodes) {
         this.parent = parent;
+        this.rows = rows;
+        this.columns = columns;
         this.allNodes = nodes;
-        this.agentNodes = nodes.stream().filter(n -> n.getElements().stream().
-                anyMatch(e -> e instanceof Agent)).collect(Collectors.toList());
-        this.goalNodes = nodes.stream().filter(n -> n.getElements().stream().
-                anyMatch(e -> e instanceof Goal)).collect(Collectors.toList());
-        this.boxNodes = nodes.stream().filter(n -> n.getElements().stream().
-                anyMatch(e -> e instanceof Box)).collect(Collectors.toList());
-        this.actions = new Command[(int) nodes.stream().filter(n -> n.getElements().stream().anyMatch(e -> e instanceof Agent)).count()];
+        this.agentNodes = nodes.stream().filter(n -> n.getAgent() != null).collect(Collectors.toList());
+        this.goalNodes = nodes.stream().filter(n -> n.getGoal() != null).collect(Collectors.toList());
+        this.boxNodes = nodes.stream().filter(n -> n.getBox() != null).collect(Collectors.toList());
+        this.actions = new Command[this.agentNodes.size()];
+        for (int i = 0; i < this.actions.length; i++) {
+            this.actions[i] = new Command();
+        }
         if (this.parent == null) {
             this.g = 0;
         } else {
@@ -52,28 +56,52 @@ public class Graph {
         return Collections.unmodifiableList(boxNodes);
     }
 
-    public boolean moveAgent(Node fromNode, Node toNode) {
-        List<ColeredElement> agent = fromNode.getElements().stream().
-                filter(e -> e instanceof Agent).collect(Collectors.toList());
-        boolean success = false;
-        if (agent.size() == 1) {
-            success = toNode.addElement(agent.get(0));
-            success &= fromNode.removeElement(agent.get(0));
-            success &= this.agentNodes.remove(fromNode);
-            success &= this.agentNodes.add(toNode);
+    public boolean moveAgent(Node fromNodeOriginal, Node toNodeOriginal) throws Exception {
+        int fromIndex = this.allNodes.indexOf(fromNodeOriginal);
+        if (fromIndex < 0) {
+            System.out.println();
+        }
+        int toIndex = this.allNodes.indexOf(toNodeOriginal);
+        if (toIndex < 0) {
+            System.out.println();
+        }
+        Node fromNode = this.allNodes.get(this.allNodes.indexOf(fromNodeOriginal));
+        Node toNode = this.allNodes.get(this.allNodes.indexOf(toNodeOriginal));
+        if (fromNode == null || toNode == null) {
+            throw new Exception("This should never happen");
+        }
+        boolean success;
+        if (!fromNode.equals(fromNodeOriginal) || !toNode.equals(toNodeOriginal)) {
+            System.out.println("");
+        }
+        toNode.setAgent(fromNode.getAgent());
+        fromNode.setAgent(null);
+        success = this.agentNodes.remove(fromNode);
+        success &= this.agentNodes.add(toNode);
+        if (!success) {
+            throw new Exception("This should never happen");
         }
         return success;
     }
 
-    public boolean moveBox(Node fromNode, Node toNode) {
-        List<ColeredElement> box = fromNode.getElements().stream().
-                filter(e -> e instanceof Box).collect(Collectors.toList());
-        boolean success = false;
-        if (box.size() == 1) {
-            success = toNode.removeElement(box.get(0));
-            success &= fromNode.addElement(box.get(0));
-            success &= this.boxNodes.remove(fromNode);
-            success &= this.boxNodes.add(toNode);
+    public boolean moveBox(Node fromNodeOriginal, Node toNodeOriginal) throws Exception {
+        Node fromNode = this.allNodes.get(this.allNodes.indexOf(fromNodeOriginal));
+        Node toNode = this.allNodes.get(this.allNodes.indexOf(toNodeOriginal));
+        if (fromNode == null || toNode == null) {
+            throw new Exception("This should never happen");
+        }
+        boolean success;
+        toNode.setBox(fromNode.getBox());
+        fromNode.setBox(null);
+        success = this.boxNodes.remove(fromNode);
+        if (!success) {
+            System.out.println(this.toString());
+            throw new Exception("This should never happen");
+        }
+        success &= this.boxNodes.add(toNode);
+        if (!success) {
+            System.out.println(this.toString());
+            throw new Exception("This should never happen");
         }
         return  success;
     }
@@ -82,7 +110,7 @@ public class Graph {
         return parent;
     }
 
-    public int getG() {
+    public int g() {
         return g;
     }
 
@@ -97,6 +125,68 @@ public class Graph {
             }
         }
         return true;
+    }
+
+    public List<Graph> getExpandedStates() throws Exception {
+        List<Graph> expandedStates = new ArrayList<>();
+        for (Node agentNode : this.agentNodes) {
+            for (Edge edge : agentNode.getEdges()) {
+                Node newAgentNode = edge.getDestination();
+                if (newAgentNode.canBeMovedTo()) {
+                    Command command = new Command(getDir(agentNode, newAgentNode));
+                    Graph graph = this.childState();
+                    graph.actions[Character.getNumericValue(agentNode.getAgent().getLetter())] = command;
+                    graph.moveAgent(agentNode, newAgentNode);
+                    expandedStates.add(graph);
+                } else if (newAgentNode.getBox() != null &&
+                        newAgentNode.getBox().getColor().equals(agentNode.getAgent().getColor()) && false) {
+                    for (Edge newAgentNodeEdge : newAgentNode.getEdges()) {
+                        Node newBoxNode = newAgentNodeEdge.getDestination();
+                        if (newBoxNode.canBeMovedTo()) {
+                            Command command = new Command(Command.Type.Push, getDir(agentNode, newAgentNode),
+                                    getDir(newAgentNode, newBoxNode));
+                            if (!Command.isOpposite(command.dir1, command.dir2)) {
+                                Graph graph = this.childState();
+                                graph.actions[Character.getNumericValue(agentNode.getAgent().getLetter())] = command;
+                                graph.moveAgent(agentNode, newAgentNode);
+                                graph.moveBox(newAgentNode, newBoxNode);
+                                expandedStates.add(graph);
+                            }
+                        }
+                    }
+                    for (Edge newAgentNodeEdge : agentNode.getEdges()) {
+                        Node newAgentNode1 = newAgentNodeEdge.getDestination();
+                        if (newAgentNode1.canBeMovedTo()) {
+                            Command command = new Command(Command.Type.Pull, getDir(agentNode, newAgentNode1),
+                                    getDir(newAgentNode, agentNode));
+                            Graph graph = this.childState();
+                            graph.actions[Character.getNumericValue(agentNode.getAgent().getLetter())] = command;
+                            graph.moveAgent(agentNode, newAgentNode1);
+                            graph.moveBox(newAgentNode, agentNode);
+                            expandedStates.add(graph);
+                        }
+                    }
+                }
+            }
+        }
+        return expandedStates;
+    }
+
+    private Command.Dir getDir(Node fromNode, Node toNode) {
+        int newX = toNode.getX().compareTo(fromNode.getX());
+        int newY = toNode.getY().compareTo(fromNode.getY());
+
+        if (newX == 0 && newY < 0) {
+            return Command.Dir.N;
+        } else if (newX == 0 && newY > 0) {
+            return Command.Dir.S;
+        } else if (newX > 0 && newY == 0) {
+            return Command.Dir.E;
+        } else if (newX < 0 && newY == 0) {
+            return Command.Dir.W;
+        } else {
+            return null;
+        }
     }
 
     public List<Graph> extractPlan() {
@@ -114,7 +204,7 @@ public class Graph {
         for (Node n : this.allNodes) {
             clone.add(n.clone());
         }
-        return new Graph(this, clone);
+        return new Graph(this, this.rows, this.columns, clone);
     }
 
     public List<Node> shortestPath(Node fromNode, Node toNode) {
@@ -164,5 +254,63 @@ public class Graph {
     private boolean isNeighbours(Node fromNode, Node toNode) {
         return fromNode.getEdges().stream().anyMatch(e -> e.getDestination().equals(toNode))
                 || toNode.getEdges().stream().anyMatch(e -> e.getDestination().equals(fromNode));
+    }
+
+    public Command[] getActions() {
+        return actions;
+    }
+
+    public String actionsToString() {
+        StringBuilder act = new StringBuilder("[");
+        for (Command cmd : this.actions) {
+            act.append(cmd).append(",");
+        }
+        act.setLength(act.length() - 1);
+        act.append("]");
+        return act.toString();
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder stringBuilder = new StringBuilder();
+        for (int row = 0; row < this.rows; row++) {
+            for (int col = 0; col < this.columns; col++) {
+                int finalRow = row;
+                int finalCol = col;
+                Optional<Node> node = this.allNodes.stream().filter(n -> n.getY() == finalRow && n.getX() == finalCol).findFirst();
+                if (node.isPresent()) {
+                    if (node.get().getBox() != null) {
+                        stringBuilder.append(node.get().getBox().getLetter());
+                    } else if (node.get().getGoal() != null) {
+                        stringBuilder.append(node.get().getGoal().getLetter());
+                    } else if (node.get().getAgent() != null) {
+                        stringBuilder.append(node.get().getAgent().getLetter());
+                    } else {
+                        stringBuilder.append(' ');
+                    }
+                } else {
+                    stringBuilder.append('+');
+                }
+            }
+            stringBuilder.append("\n");
+        }
+        return stringBuilder.toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Graph graph = (Graph) o;
+        return  Objects.equals(allNodes, graph.allNodes) &&
+                Objects.equals(agentNodes, graph.agentNodes) &&
+                Objects.equals(goalNodes, graph.goalNodes) &&
+                Objects.equals(boxNodes, graph.boxNodes);
+    }
+
+    @Override
+    public int hashCode() {
+
+        return Objects.hash(allNodes, agentNodes, goalNodes, boxNodes);
     }
 }

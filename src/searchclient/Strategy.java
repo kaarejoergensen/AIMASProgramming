@@ -1,21 +1,23 @@
 package searchclient;
 
+import searchclient.model.Graph;
+
 import java.util.*;
 
 public abstract class Strategy {
-    private HashSet<State> explored;
+    private HashSet<Graph> explored;
     private final long startTime;
 
     public Strategy() {
-        this.explored = new HashSet<State>();
+        this.explored = new HashSet<Graph>();
         this.startTime = System.currentTimeMillis();
     }
 
-    public void addToExplored(State n) {
+    public void addToExplored(Graph n) {
         this.explored.add(n);
     }
 
-    public boolean isExplored(State n) {
+    public boolean isExplored(Graph n) {
         return this.explored.contains(n);
     }
 
@@ -31,11 +33,11 @@ public abstract class Strategy {
         return (System.currentTimeMillis() - this.startTime) / 1000f;
     }
 
-    public abstract State getAndRemoveLeaf();
+    public abstract Graph getAndRemoveLeaf();
 
-    public abstract void addToFrontier(State n);
+    public abstract void addToFrontier(Graph n);
 
-    public abstract boolean inFrontier(State n);
+    public abstract boolean inFrontier(Graph n);
 
     public abstract int countFrontier();
 
@@ -45,24 +47,24 @@ public abstract class Strategy {
     public abstract String toString();
 
     public static class StrategyBFS extends Strategy {
-        private ArrayDeque<State> frontier;
-        private HashSet<State> frontierSet;
+        private ArrayDeque<Graph> frontier;
+        private HashSet<Graph> frontierSet;
 
         public StrategyBFS() {
             super();
-            frontier = new ArrayDeque<State>();
-            frontierSet = new HashSet<State>();
+            frontier = new ArrayDeque<Graph>();
+            frontierSet = new HashSet<Graph>();
         }
 
         @Override
-        public State getAndRemoveLeaf() {
-            State n = frontier.pollFirst();
+        public Graph getAndRemoveLeaf() {
+            Graph n = frontier.pollFirst();
             frontierSet.remove(n);
             return n;
         }
 
         @Override
-        public void addToFrontier(State n) {
+        public void addToFrontier(Graph n) {
             frontier.addLast(n);
             frontierSet.add(n);
         }
@@ -78,7 +80,7 @@ public abstract class Strategy {
         }
 
         @Override
-        public boolean inFrontier(State n) {
+        public boolean inFrontier(Graph n) {
             return frontierSet.contains(n);
         }
 
@@ -89,8 +91,8 @@ public abstract class Strategy {
     }
 
     public static class StrategyDFS extends Strategy {
-        private LinkedList<State> frontier;
-        private HashSet<State> frontierSet;
+        private LinkedList<Graph> frontier;
+        private HashSet<Graph> frontierSet;
 
         public StrategyDFS() {
             super();
@@ -99,14 +101,14 @@ public abstract class Strategy {
         }
 
         @Override
-        public State getAndRemoveLeaf() {
-            State n = frontier.removeLast();
+        public Graph getAndRemoveLeaf() {
+            Graph n = frontier.removeLast();
             frontierSet.remove(n);
             return n;
         }
 
         @Override
-        public void addToFrontier(State n) {
+        public void addToFrontier(Graph n) {
             frontier.add(n);
             frontierSet.add(n);
         }
@@ -122,7 +124,7 @@ public abstract class Strategy {
         }
 
         @Override
-        public boolean inFrontier(State n) {
+        public boolean inFrontier(Graph n) {
             return frontierSet.contains(n);
         }
 
@@ -135,31 +137,31 @@ public abstract class Strategy {
     public static class StrategyBestFirst extends Strategy {
         private Heuristic heuristic;
 
-        private PriorityQueue<State> frontier;
-        private HashSet<State> frontierSet;
+        private PriorityQueue<Graph> frontier;
+        private HashSet<Graph> frontierSet;
         int i = 0;
 
         public StrategyBestFirst(Heuristic h) {
             super();
             this.heuristic = h;
-            frontier = new PriorityQueue<State>(heuristic);
-            frontierSet = new HashSet<State>();
+            frontier = new PriorityQueue<Graph>(heuristic);
+            frontierSet = new HashSet<Graph>();
         }
 
         @Override
-        public State getAndRemoveLeaf() {
-            State n = frontier.poll();
+        public Graph getAndRemoveLeaf() {
+            Graph n = frontier.poll();
             frontierSet.remove(n);
             return n;
         }
 
         @Override
-        public void addToFrontier(State n) {
+        public void addToFrontier(Graph n) {
             frontier.add(n);
             frontierSet.add(n);
         }
 
-        private String text(State n ) {
+        private String text(Graph n ) {
             return  "f: " + (n.g() + heuristic.h(n) + " g: " + n.g() + " h: " + heuristic.h(n));
         }
 
@@ -174,7 +176,7 @@ public abstract class Strategy {
         }
 
         @Override
-        public boolean inFrontier(State n) {
+        public boolean inFrontier(Graph n) {
             return frontierSet.contains(n);
         }
 

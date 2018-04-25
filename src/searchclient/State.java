@@ -90,16 +90,6 @@ public class State {
         return false;
     }
 
-    public String actionsToString() {
-        StringBuilder act = new StringBuilder("[");
-        for (Command cmd : this.actions) {
-            act.append(cmd).append(",");
-        }
-        act.setLength(act.length() - 1);
-        act.append("]");
-        return act.toString();
-    }
-
     public List<State> test() {
         List<State> result = this.ChildState().recursiveTest();
         result.forEach(s -> s.parent = this);

@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 public class SearchClient {
 
 
-    private State initialState;
+    private Graph initialState;
 
     public SearchClient(BufferedReader serverMessages) throws Exception {
         int row = 0;
@@ -116,20 +116,16 @@ public class SearchClient {
             row++;
         }
         List<Node> nodes = Arrays.stream(tiles).flatMap(Arrays::stream).filter(Objects::nonNull).collect(Collectors.toList());
-        Graph graph = new Graph(null, nodes);
-        List<Node> shortestPath = graph.shortestPath(graph.getAgentNodes().get(0), graph.getBoxNodes().get(0));
-        Graph secondGraph = graph.childState();
-        secondGraph.moveAgent(secondGraph.getAgentNodes().get(0), secondGraph.getAllNodes().get(0));
-
+        this.initialState = new Graph(null, rows, columns, nodes);
     }
 
-    public LinkedList<State> Search(Strategy strategy) throws IOException {
+    public List<Graph> Search(Strategy strategy) throws Exception {
         System.err.format("Search starting with strategy %s.\n", strategy.toString());
         strategy.addToFrontier(this.initialState);
 
         int iterations = 0;
         while (true) {
-            if (iterations == 10) {
+            if (iterations == 1000) {
                 System.err.println(strategy.searchStatus());
                 iterations = 0;
             }
@@ -138,23 +134,22 @@ public class SearchClient {
                 return null;
             }
 
-            State leafState = strategy.getAndRemoveLeaf();
+            Graph leafState = strategy.getAndRemoveLeaf();
 
             if (leafState.isGoalState()) {
                 return leafState.extractPlan();
             }
 
-/*            System.out.println(leafState.actionsToString());
-            System.out.println(leafState);
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-*/
+//            System.out.println(leafState.actionsToString());
+//            System.out.println(leafState);
+//            try {
+//                Thread.sleep(5000);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
+
             strategy.addToExplored(leafState);
-            List<State> expanded = leafState.test();
-            for (State n : expanded) { // The list of expanded States is shuffled randomly; see State.java.
+            for (Graph n : leafState.getExpandedStates()) { // The list of expanded States is shuffled randomly; see State.java.
                 if (!strategy.isExplored(n) && !strategy.inFrontier(n)) {
                     strategy.addToFrontier(n);
                 }
@@ -200,7 +195,7 @@ public class SearchClient {
             System.err.println("Defaulting to greedy search. Use arguments -bfs, -dfs, -astar, -wastar, or -greedy to set the search strategy.");
         }
 
-        LinkedList<State> solution;
+        List<Graph> solution;
         try {
             solution = client.Search(strategy);
         } catch (OutOfMemoryError ex) {
@@ -217,7 +212,7 @@ public class SearchClient {
             System.err.println("Found solution of length " + solution.size());
             System.err.println(strategy.searchStatus());
 
-            for (State n : solution) {
+            for (Graph n : solution) {
                 StringBuilder act = new StringBuilder("[");
                 for (Command cmd : n.getActions()) {
                     act.append(cmd).append(",");
