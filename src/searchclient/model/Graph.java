@@ -1,10 +1,6 @@
 package searchclient.model;
 
 import searchclient.Command;
-import searchclient.model.Elements.Agent;
-import searchclient.model.Elements.Box;
-import searchclient.model.Elements.ColeredElement;
-import searchclient.model.Elements.Goal;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -13,33 +9,17 @@ public class Graph {
     private Graph parent;
     private int rows;
     private int columns;
-    private List<Node> allNodes;
-    private List<Node> agentNodes;
-    private List<Node> goalNodes;
-    private List<Node> boxNodes;
+    private Map<String, Node> allNodes;
     private int g;
     private Command[] actions;
 
 
-    public Graph(Graph parent, int rows, int columns, List<Node> nodes) {
-        this(parent, rows, columns, nodes, null, null, null);
-    }
-
-    public Graph(Graph parent, int rows, int columns, List<Node> nodes, List<Node> agentNodes,
-                 List<Node> goalNodes, List<Node> boxNodes) {
+    public Graph(Graph parent, int rows, int columns, Map<String, Node> nodes) {
         this.parent = parent;
         this.rows = rows;
         this.columns = columns;
         this.allNodes = nodes;
-
-        this.agentNodes = agentNodes == null ? nodes.stream().filter(n -> n.getAgent() != null).
-                collect(Collectors.toList()): agentNodes;
-        this.goalNodes = goalNodes == null ? nodes.stream().filter(n -> n.getGoal() != null).
-                collect(Collectors.toList()): goalNodes;
-        this.boxNodes = boxNodes == null ? nodes.stream().filter(n -> n.getBox() != null).
-                collect(Collectors.toList()) : boxNodes;
-
-        this.actions = new Command[this.agentNodes.size()];
+        this.actions = new Command[this.getAgentNodes().size()];
         for (int i = 0; i < this.actions.length; i++) {
             this.actions[i] = new Command();
         }
@@ -50,58 +30,37 @@ public class Graph {
         }
     }
 
-    public List<Node> getAllNodes() {
-        return Collections.unmodifiableList(allNodes);
+    public Map<String, Node> getAllNodes() {
+        return Collections.unmodifiableMap(allNodes);
     }
 
     public List<Node> getAgentNodes() {
-        return Collections.unmodifiableList(agentNodes);
+        return Collections.unmodifiableList(this.allNodes.values().stream().filter(n -> n.getAgent() != null).
+                collect(Collectors.toList()));
     }
 
     public List<Node> getGoalNodes() {
-        return Collections.unmodifiableList(goalNodes);
+        return Collections.unmodifiableList(this.allNodes.values().stream().filter(n -> n.getGoal() != null).
+                collect(Collectors.toList()));
     }
 
     public List<Node> getBoxNodes() {
-        return Collections.unmodifiableList(boxNodes);
+        return Collections.unmodifiableList(this.allNodes.values().stream().filter(n -> n.getBox() != null).
+                collect(Collectors.toList()));
     }
 
-    public boolean moveAgent(Node fromNodeOriginal, Node toNodeOriginal) throws Exception {
-        int fromIndex = this.allNodes.indexOf(fromNodeOriginal);
-        int toIndex = this.allNodes.indexOf(toNodeOriginal);
-        if (fromIndex < 0 || toIndex < 0) {
-            throw new Exception("This should never happen");
-        }
-        Node fromNode = this.allNodes.get(fromIndex);
-        Node toNode = this.allNodes.get(toIndex);
-        boolean success;
-        success = this.agentNodes.remove(fromNode);
-        success &= this.agentNodes.add(toNode);
+    public void moveAgent(Node fromNodeOriginal, Node toNodeOriginal) throws Exception {
+        Node fromNode = this.allNodes.get(fromNodeOriginal.getId());
+        Node toNode = this.allNodes.get(toNodeOriginal.getId());
         toNode.setAgent(fromNode.getAgent());
         fromNode.setAgent(null);
-        if (!success) {
-            throw new Exception("This should never happen");
-        }
-        return success;
     }
 
-    public boolean moveBox(Node fromNodeOriginal, Node toNodeOriginal) throws Exception {
-        int fromIndex = this.allNodes.indexOf(fromNodeOriginal);
-        int toIndex = this.allNodes.indexOf(toNodeOriginal);
-        if (fromIndex < 0 || toIndex < 0) {
-            throw new Exception("This should never happen");
-        }
-        Node fromNode = this.allNodes.get(fromIndex);
-        Node toNode = this.allNodes.get(toIndex);
-        boolean success;
-        success = this.boxNodes.remove(fromNode);
-        success &= this.boxNodes.add(toNode);
+    public void moveBox(Node fromNodeOriginal, Node toNodeOriginal) throws Exception {
+        Node fromNode = this.allNodes.get(fromNodeOriginal.getId());
+        Node toNode = this.allNodes.get(toNodeOriginal.getId());
         toNode.setBox(fromNode.getBox());
         fromNode.setBox(null);
-        if (!success) {
-            throw new Exception("This should never happen");
-        }
-        return  success;
     }
 
     public Graph getParent() {
@@ -117,11 +76,10 @@ public class Graph {
     }
 
     public boolean isGoalState() {
-        if (this.goalNodes == null) {
-            System.out.println();
-        }
-        for (Node goal : this.goalNodes) {
-            if (!this.boxNodes.contains(goal)) {
+        List<Node> goalNodes = this.getGoalNodes();
+        List<Node> boxNodes = this.getBoxNodes();
+        for (Node goal : goalNodes) {
+            if (!boxNodes.contains(goal)) {
                 return false;
             }
         }
@@ -130,9 +88,9 @@ public class Graph {
 
     public List<Graph> getExpandedStates() throws Exception {
         List<Graph> expandedStates = new ArrayList<>();
-        for (Node agentNode : this.agentNodes) {
+        for (Node agentNode : this.getAgentNodes()) {
             for (Edge edge : agentNode.getEdges()) {
-                Node newAgentNode = edge.getDestination();
+                Node newAgentNode = this.allNodes.get(edge.getDestination());
                 if (newAgentNode.canBeMovedTo()) {
                     Command command = new Command(getDir(agentNode, newAgentNode));
                     Graph graph = this.childState();
@@ -140,9 +98,9 @@ public class Graph {
                     graph.moveAgent(agentNode, newAgentNode);
                     expandedStates.add(graph);
                 } else if (newAgentNode.getBox() != null &&
-                        newAgentNode.getBox().getColor().equals(agentNode.getAgent().getColor()) && false) {
+                        newAgentNode.getBox().getColor().equals(agentNode.getAgent().getColor())) {
                     for (Edge newAgentNodeEdge : newAgentNode.getEdges()) {
-                        Node newBoxNode = newAgentNodeEdge.getDestination();
+                        Node newBoxNode = this.allNodes.get(newAgentNodeEdge.getDestination());
                         if (newBoxNode.canBeMovedTo()) {
                             Command command = new Command(Command.Type.Push, getDir(agentNode, newAgentNode),
                                     getDir(newAgentNode, newBoxNode));
@@ -156,7 +114,7 @@ public class Graph {
                         }
                     }
                     for (Edge newAgentNodeEdge : agentNode.getEdges()) {
-                        Node newAgentNode1 = newAgentNodeEdge.getDestination();
+                        Node newAgentNode1 = this.allNodes.get(newAgentNodeEdge.getDestination());
                         if (newAgentNode1.canBeMovedTo()) {
                             Command command = new Command(Command.Type.Pull, getDir(agentNode, newAgentNode1),
                                     getDir(newAgentNode, agentNode));
@@ -201,77 +159,54 @@ public class Graph {
     }
 
     public Graph childState() {
-        List<Node> allClone = new ArrayList<>();
-        for (Node n : this.allNodes) {
-            allClone.add(n.clone());
+        Map<String, Node> allClone = new HashMap<>();
+        for (Node n : this.allNodes.values()) {
+            allClone.put(n.getId(), n.clone());
         }
-        List<Node> agentClone = new ArrayList<>();
-        for (Node n : this.agentNodes) {
-            agentClone.add(n.clone());
-        }
-        List<Node> goalClone = new ArrayList<>();
-        for (Node n : this.goalNodes) {
-            goalClone.add(n.clone());
-        }
-        List<Node> boxClone = new ArrayList<>();
-        for (Node n : this.boxNodes) {
-            boxClone.add(n.clone());
-        }
-        Graph graph = new Graph(this, this.rows, this.columns, allClone, agentClone, goalClone, boxClone);
-        if (!this.equals(graph)) {
-            System.out.println();
-            this.equals(graph);
-        }
-        return graph;
+        return new Graph(this, this.rows, this.columns, allClone);
     }
 
     public List<Node> shortestPath(Node fromNode, Node toNode) {
         if (fromNode == null || toNode == null || fromNode.equals(toNode)) {
             return new ArrayList<>();
         }
-        LinkedList<Node> result = new LinkedList<>();
-
-        List<Node> visitedNodes = new ArrayList<>();
+        List<String> visitedNodes = new ArrayList<>();
         Queue<Node> queue = new LinkedList<>();
-        Stack<Node> pathStack = new Stack<>();
+        Map<String, List<Node>> predecessors = new HashMap<>();
 
-
-        visitedNodes.add(fromNode);
+        visitedNodes.add(fromNode.getId());
         queue.add(fromNode);
+        predecessors.put(fromNode.getId(), new ArrayList<>(Collections.singletonList(fromNode)));
 
         while (!queue.isEmpty()) {
             Node n = queue.poll();
-            if (n.equals(toNode)) {
-                break;
-            }
 
-            List<Edge> edges = n.getEdges();
-            for (Edge edge : edges) {
-                if (!visitedNodes.contains(edge.getDestination())) {
-                    queue.add(edge.getDestination());
+            for (Edge edge : n.getEdges()) {
+                Node destinationNode = this.allNodes.get(edge.getDestination());
+                if (destinationNode.equals(toNode)) {
+                    List<Node> finalList = predecessors.get(n.getId());
+                    finalList.add(toNode);
+                    return finalList;
+                }
+                if (!visitedNodes.contains(edge.getDestination()) &&
+                        destinationNode.canBeMovedTo()) {
+                    queue.add(destinationNode);
                     visitedNodes.add(edge.getDestination());
-                    pathStack.add(edge.getDestination());
+                    List<Node> predecessorList = new ArrayList<>();
+                    if (predecessors.containsKey(n.getId())) {
+                        predecessorList.addAll(predecessors.get(n.getId()));
+                    }
+                    predecessorList.add(destinationNode);
+                    predecessors.put(edge.getDestination(), predecessorList);
                 }
             }
         }
-
-        Node node, currentSrc = toNode;
-        while(!pathStack.isEmpty()) {
-            node = pathStack.pop();
-            if (isNeighbours(currentSrc, node)) {
-                result.addFirst(node);
-                currentSrc = node;
-                if (node == fromNode) {
-                    break;
-                }
-            }
-        }
-        return result;
+        return new ArrayList<>();
     }
 
     private boolean isNeighbours(Node fromNode, Node toNode) {
-        return fromNode.getEdges().stream().anyMatch(e -> e.getDestination().equals(toNode))
-                || toNode.getEdges().stream().anyMatch(e -> e.getDestination().equals(fromNode));
+        return fromNode.getEdges().stream().anyMatch(e -> e.getDestination().equals(toNode.getId()))
+                || toNode.getEdges().stream().anyMatch(e -> e.getDestination().equals(fromNode.getId()));
     }
 
     public Command[] getActions() {
@@ -295,7 +230,8 @@ public class Graph {
             for (int col = 0; col < this.columns; col++) {
                 int finalRow = row;
                 int finalCol = col;
-                Optional<Node> node = this.allNodes.stream().filter(n -> n.getY() == finalRow && n.getX() == finalCol).findFirst();
+                Optional<Node> node = this.allNodes.values().stream().filter(n -> n.getY() == finalRow
+                        && n.getX() == finalCol).findFirst();
                 if (node.isPresent()) {
                     if (node.get().getBox() != null) {
                         stringBuilder.append(node.get().getBox().getLetter());
@@ -320,15 +256,11 @@ public class Graph {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Graph graph = (Graph) o;
-        return  Objects.equals(allNodes, graph.allNodes) &&
-                Objects.equals(agentNodes, graph.agentNodes) &&
-                Objects.equals(goalNodes, graph.goalNodes) &&
-                Objects.equals(boxNodes, graph.boxNodes);
+        return  Objects.equals(allNodes, graph.allNodes);
     }
 
     @Override
     public int hashCode() {
-
-        return Objects.hash(allNodes, agentNodes, goalNodes, boxNodes);
+        return Objects.hash(allNodes);
     }
 }

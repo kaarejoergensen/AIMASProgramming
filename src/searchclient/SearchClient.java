@@ -106,18 +106,20 @@ public class SearchClient {
                     }
                     tiles[row][col] = node;
                     if (tiles[row - 1][col] != null) {
-                        node.addEdge(new Edge(node, tiles[row - 1][col]));
-                        tiles[row - 1][col].addEdge(new Edge(tiles[row - 1][col], node));
+                        node.addEdge(new Edge(node.getId(), tiles[row - 1][col].getId()));
+                        tiles[row - 1][col].addEdge(new Edge(tiles[row - 1][col].getId(), node.getId()));
                     }
                     if (tiles[row][col - 1] != null) {
-                        node.addEdge(new Edge(node, tiles[row][col - 1]));
-                        tiles[row][col - 1].addEdge(new Edge(tiles[row][col - 1], node));
+                        node.addEdge(new Edge(node.getId(), tiles[row][col - 1].getId()));
+                        tiles[row][col - 1].addEdge(new Edge(tiles[row][col - 1].getId(), node.getId()));
                     }
                 }
             }
             row++;
         }
-        List<Node> nodes = Arrays.stream(tiles).flatMap(Arrays::stream).filter(Objects::nonNull).collect(Collectors.toList());
+
+        Map<String, Node> nodes = Arrays.stream(tiles).flatMap(Arrays::stream).
+                filter(Objects::nonNull).collect(Collectors.toMap(Node::getId, n -> n));
         this.initialState = new Graph(null, rows, columns, nodes);
         generatePriorityList(initialState);
     }
@@ -145,8 +147,9 @@ public class SearchClient {
 
 //            System.out.println(leafState.actionsToString());
 //            System.out.println(leafState);
+//            System.out.println(((StrategyBestFirst)strategy).h(leafState));
 //            try {
-//                Thread.sleep(5000);
+//                Thread.sleep(3000);
 //            } catch (InterruptedException e) {
 //                e.printStackTrace();
 //            }

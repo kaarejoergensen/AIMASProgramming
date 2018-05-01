@@ -49,6 +49,10 @@ public class Node {
         this.edges.add(edge);
     }
 
+    public void setEdges(List<Edge> edges) {
+        this.edges = edges;
+    }
+
     public Integer getX() {
         return x;
     }
@@ -89,9 +93,9 @@ public class Node {
     public Node clone() {
         Node node = new Node(this.x, this.y);
 
-        node.agent = this.agent;
-        node.box = this.box;
-        node.goal = this.goal;
+        node.agent = this.agent == null ? null : new Agent(this.agent.getLetter(), this.agent.getColor());
+        node.box = this.box == null ? null : new Box(this.box.getLetter(), this.box.getColor());
+        node.goal = this.goal == null ? null : new Goal(this.goal.getLetter());
 
         node.edges = this.edges;
 
