@@ -19,6 +19,7 @@ import java.io.InputStreamReader;
 import java.util.*;
 import java.util.stream.Collectors;
 
+
 public class SearchClient {
 
 
@@ -118,7 +119,6 @@ public class SearchClient {
         }
         List<Node> nodes = Arrays.stream(tiles).flatMap(Arrays::stream).filter(Objects::nonNull).collect(Collectors.toList());
         this.initialState = new Graph(null, rows, columns, nodes);
-
         generatePriorityList(initialState);
     }
 
@@ -181,10 +181,6 @@ public class SearchClient {
                 }
             }
         }
-
-
-
-
         //Test
         System.err.println("Prio list bro: " + Arrays.asList(priorityList));
     }
