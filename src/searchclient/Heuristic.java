@@ -23,7 +23,7 @@ public abstract class Heuristic implements Comparator<Graph> {
         }
         for (Node boxNode : graph.getBoxNodes()) {
             List<Node> goalNodesWithSameLetter = graph.getGoalNodes().stream().
-                    filter(n -> n.getGoal().getLetter() == boxNode.getBox().getLetter()).
+                    filter(n -> n.getGoal().hasSameLetter(boxNode.getBox())).
                     collect(Collectors.toList());
             for (Node goalNode : goalNodesWithSameLetter) {
                 if (!goalNode.equals(boxNode)) {

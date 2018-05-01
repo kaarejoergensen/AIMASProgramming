@@ -145,14 +145,14 @@ public class SearchClient {
                 return leafState.extractPlan();
             }
 
-            System.out.println(leafState.actionsToString());
-            System.out.println(leafState);
-            System.out.println(((StrategyBestFirst)strategy).h(leafState));
-            try {
-                Thread.sleep(3000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+//            System.out.println(leafState.actionsToString());
+//            System.out.println(leafState);
+//            System.out.println(((StrategyBestFirst)strategy).h(leafState));
+//            try {
+//                Thread.sleep(3000);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
 
             strategy.addToExplored(leafState);
             for (Graph n : leafState.getExpandedStates()) { // The list of expanded States is shuffled randomly; see State.java.

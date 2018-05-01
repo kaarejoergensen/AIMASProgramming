@@ -27,6 +27,10 @@ public class ColeredElement {
         this.color = color;
     }
 
+    public boolean hasSameLetter(ColeredElement other) {
+        return Character.toLowerCase(this.letter) == Character.toLowerCase(other.getLetter());
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
