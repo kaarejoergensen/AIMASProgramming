@@ -4,15 +4,24 @@ import searchclient.model.Graph;
 import searchclient.model.Node;
 
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public abstract class Heuristic implements Comparator<Graph> {
-    public Heuristic(Graph n) {
+
+    HashMap<Character, Integer> prioList;
+
+    public Heuristic(Graph n, HashMap<Character, Integer> priortyList) {
+        this.prioList = priortyList;
     }
 
     public int h(Graph graph) {
+
         int result = 0;
+
+        
+
         for (Node agentNode : graph.getAgentNodes()) {
             List<Node> boxNodesWithSameColor = graph.getBoxNodes().stream().
                     filter(n -> n.getBox() != null && n.getBox().getColor().equals(agentNode.getAgent().getColor())).
@@ -31,6 +40,8 @@ public abstract class Heuristic implements Comparator<Graph> {
                 }
             }
         }
+
+
         return result;
     }
 
@@ -42,8 +53,8 @@ public abstract class Heuristic implements Comparator<Graph> {
     }
 
     public static class AStar extends Heuristic {
-        public AStar(Graph initialState) {
-            super(initialState);
+        public AStar(Graph initialState, HashMap<Character, Integer> priortyList) {
+            super(initialState, priortyList);
         }
 
         @Override
