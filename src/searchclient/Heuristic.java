@@ -1,46 +1,56 @@
 package searchclient;
 
+import searchclient.exceptions.NoPathFoundException;
+import searchclient.model.Elements.Goal;
 import searchclient.model.Graph;
 import searchclient.model.Node;
 
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public abstract class Heuristic implements Comparator<Graph> {
 
-    HashMap<Character, Integer> prioList;
+    private Goal currentGoal;
 
-    public Heuristic(Graph n, HashMap<Character, Integer> priortyList) {
-        this.prioList = priortyList;
+    public Heuristic(Goal currentGoal) {
+        this.currentGoal = currentGoal;
     }
 
     public int h(Graph graph) {
-
         int result = 0;
-
-        
 
         for (Node agentNode : graph.getAgentNodes()) {
             List<Node> boxNodesWithSameColor = graph.getBoxNodes().stream().
                     filter(n -> n.getBox() != null && n.getBox().getColor().equals(agentNode.getAgent().getColor())).
                     collect(Collectors.toList());
             for (Node boxNode : boxNodesWithSameColor) {
-                result += 3 * graph.shortestPath(agentNode, boxNode).size();
+                try {
+                    result += 3 * graph.shortestPath(agentNode, boxNode).size();
+                } catch (NoPathFoundException e) {
+                    result += 10000;
+                }
             }
         }
+        boolean groupDone = true;
         for (Node boxNode : graph.getBoxNodes()) {
             List<Node> goalNodesWithSameLetter = graph.getGoalNodes().stream().
                     filter(n -> n.getGoal().hasSameLetter(boxNode.getBox())).
                     collect(Collectors.toList());
             for (Node goalNode : goalNodesWithSameLetter) {
                 if (!goalNode.equals(boxNode)) {
-                    result += 10 * (graph.shortestPath(boxNode, goalNode).size() + 1);
+                    groupDone = false;
+                    try {
+                        result += 10 * (graph.shortestPath(boxNode, goalNode).size() + 1);
+                    } catch (NoPathFoundException e) {
+                        result += 10000;
+                    }
                 }
             }
         }
+        if (groupDone) {
 
+        }
 
         return result;
     }
@@ -53,8 +63,9 @@ public abstract class Heuristic implements Comparator<Graph> {
     }
 
     public static class AStar extends Heuristic {
-        public AStar(Graph initialState, HashMap<Character, Integer> priortyList) {
-            super(initialState, priortyList);
+
+        public AStar(Goal currentGoal) {
+            super(currentGoal);
         }
 
         @Override
@@ -71,8 +82,8 @@ public abstract class Heuristic implements Comparator<Graph> {
     public static class WeightedAStar extends Heuristic {
         private int W;
 
-        public WeightedAStar(Graph initialState, int W) {
-            super(initialState);
+        public WeightedAStar(Goal currentGoal, int W) {
+            super(currentGoal);
             this.W = W;
         }
 
@@ -88,8 +99,9 @@ public abstract class Heuristic implements Comparator<Graph> {
     }
 
     public static class Greedy extends Heuristic {
-        public Greedy(Graph initialState) {
-            super(initialState);
+
+        public Greedy(Goal currentGoal) {
+            super(currentGoal);
         }
 
         @Override

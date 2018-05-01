@@ -1,6 +1,7 @@
 package searchclient.model;
 
 import searchclient.Command;
+import searchclient.exceptions.NoPathFoundException;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -166,7 +167,7 @@ public class Graph {
         return new Graph(this, this.rows, this.columns, allClone);
     }
 
-    public List<Node> shortestPath(Node fromNode, Node toNode) {
+    public List<Node> shortestPath(Node fromNode, Node toNode) throws NoPathFoundException {
         if (fromNode == null || toNode == null || fromNode.equals(toNode)) {
             return new ArrayList<>();
         }
@@ -201,7 +202,7 @@ public class Graph {
                 }
             }
         }
-        return new ArrayList<>();
+        throw new NoPathFoundException();
     }
 
     private boolean isNeighbours(Node fromNode, Node toNode) {

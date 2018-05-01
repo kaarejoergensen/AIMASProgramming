@@ -6,15 +6,16 @@ import searchclient.Heuristic.WeightedAStar;
 import searchclient.Strategy.StrategyBFS;
 import searchclient.Strategy.StrategyBestFirst;
 import searchclient.Strategy.StrategyDFS;
+import searchclient.exceptions.NoPathFoundException;
 import searchclient.model.Edge;
 import searchclient.model.Elements.Agent;
 import searchclient.model.Elements.Box;
 import searchclient.model.Elements.Goal;
 import searchclient.model.Graph;
 import searchclient.model.Node;
+import searchclient.model.Priority;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -24,7 +25,7 @@ public class SearchClient {
 
 
     private Graph initialState;
-    private HashMap<Character, Integer> priorityList;
+    private PriorityQueue<Priority> priorityList = new PriorityQueue<>((o1, o2) -> o2.getPriority() - o1.getPriority());
 
     public SearchClient(BufferedReader serverMessages) throws Exception {
         int row = 0;
@@ -98,7 +99,7 @@ public class SearchClient {
                         node = new Node(col, row, new Box(chr, colorMap.get(chr)));
                     } else if ('a' <= chr && chr <= 'z') {
                         node = new Node(col, row, new Goal(chr));
-                    } else if (chr == ' '){
+                    } else if (chr == ' ') {
                         node = new Node(col, row);
                     } else {
                         System.err.println("Error, read invalid level character: " + (int) chr);
@@ -124,70 +125,6 @@ public class SearchClient {
         generatePriorityList(initialState);
     }
 
-    public List<Graph> Search(Strategy strategy) throws Exception {
-        System.err.format("Search starting with strategy %s.\n", strategy.toString());
-        strategy.addToFrontier(this.initialState);
-
-        int iterations = 0;
-        while (true) {
-            if (iterations == 1000) {
-                System.err.println(strategy.searchStatus());
-                iterations = 0;
-            }
-
-            if (strategy.frontierIsEmpty()) {
-                return null;
-            }
-
-            Graph leafState = strategy.getAndRemoveLeaf();
-
-            if (leafState.isGoalState()) {
-                return leafState.extractPlan();
-            }
-
-//            System.out.println(leafState.actionsToString());
-//            System.out.println(leafState);
-//            System.out.println(((StrategyBestFirst)strategy).h(leafState));
-//            try {
-//                Thread.sleep(3000);
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
-
-            strategy.addToExplored(leafState);
-            for (Graph n : leafState.getExpandedStates()) { // The list of expanded States is shuffled randomly; see State.java.
-                if (!strategy.isExplored(n) && !strategy.inFrontier(n)) {
-                    strategy.addToFrontier(n);
-                }
-            }
-            iterations++;
-        }
-    }
-
-    public void generatePriorityList(Graph graph){
-        //Går utfra at det kun er 1 boks pr mål, og kun 1 mål pr char
-        priorityList = new HashMap<>();
-        for(Node g :  graph.getGoalNodes()){
-            //Initates a new value to the hashmap
-            priorityList.put(g.getGoal().getLetter(),0);
-            //Finds all the goals between g and corresponding boxes
-            for(Node b : graph.getBoxNodes()){
-                if( Character.toLowerCase(b.getBox().getLetter()) == g.getGoal().getLetter()) {
-                    List<Node> path = graph.shortestPath(b, g);
-                    //Counts the amount of goals on the way
-                    for (Node pathNode : path) {
-                        if (pathNode.getGoal() != null) {
-                            //Add value to tmp
-                            priorityList.put(g.getGoal().getLetter(), priorityList.get(g.getGoal().getLetter()) + 1 );
-                        }
-                    }
-                }
-            }
-        }
-        //Test
-        System.err.println("Prio list bro: " + Arrays.asList(priorityList));
-    }
-
     public static void main(String[] args) throws Exception {
         BufferedReader serverMessages = new BufferedReader(new InputStreamReader(System.in));
 
@@ -207,21 +144,21 @@ public class SearchClient {
                     strategy = new StrategyDFS();
                     break;
                 case "-astar":
-                    strategy = new StrategyBestFirst(new AStar(client.initialState, client.priorityList));
+                    strategy = new StrategyBestFirst(new AStar(null)); //#TODO: Real goal
                     break;
                 case "-wastar":
                     // You're welcome to test WA* out with different values, but for the report you must at least indicate benchmarks for W = 5.
-                    strategy = new StrategyBestFirst(new WeightedAStar(client.initialState, 5));
+                    strategy = new StrategyBestFirst(new WeightedAStar(null, 5));  //#TODO: Real goal
                     break;
                 case "-greedy":
-                    strategy = new StrategyBestFirst(new Greedy(client.initialState));
+                    strategy = new StrategyBestFirst(new Greedy(null));  //#TODO: Real goal
                     break;
                 default:
                     strategy = new StrategyBFS();
                     System.err.println("Defaulting to BFS search. Use arguments -bfs, -dfs, -astar, -wastar, or -greedy to set the search strategy.");
             }
         } else {
-            strategy = new StrategyBestFirst(new Greedy(client.initialState));
+            strategy = new StrategyBestFirst(new Greedy(null));  //#TODO: Real goal
             System.err.println("Defaulting to greedy search. Use arguments -bfs, -dfs, -astar, -wastar, or -greedy to set the search strategy.");
         }
 
@@ -243,14 +180,98 @@ public class SearchClient {
             System.err.println(strategy.searchStatus());
 
             for (Graph n : solution) {
-                StringBuilder act = new StringBuilder("[");
-                for (Command cmd : n.getActions()) {
-                    act.append(cmd).append(",");
-                }
-                act.setLength(act.length() - 1);
-                act.append("]");
+                String act = n.actionsToString();
                 System.out.println(act);
-             }
+                String response = serverMessages.readLine();
+                if (response.contains("false")) {
+                    System.err.format("Server responsed with %s to the inapplicable action: %s\n", response, act);
+                    System.err.format("%s was attempted in \n%s\n", act, n.toString());
+                    System.err.format("%s was attempted in \n%s\n", n.getParent().actionsToString(), n.getParent().toString());
+                    System.err.format("%s was attempted in \n%s\n", n.getParent().getParent().actionsToString(), n.getParent().getParent().toString());
+                    break;
+                }
+            }
         }
+    }
+
+    public List<Graph> Search(Strategy strategy) throws Exception {
+        System.err.format("Search starting with strategy %s.\n", strategy.toString());
+        strategy.addToFrontier(this.initialState);
+
+        int iterations = 0;
+        while (true) {
+            if (iterations == 1000) {
+                System.err.println(strategy.searchStatus());
+                iterations = 0;
+            }
+
+            if (strategy.frontierIsEmpty()) {
+                return null;
+            }
+
+            Graph leafState = strategy.getAndRemoveLeaf();
+
+            if (leafState.isGoalState()) {
+                return leafState.extractPlan();
+            }
+
+            System.out.println(leafState.actionsToString());
+            System.out.println(leafState);
+            System.out.println(((StrategyBestFirst) strategy).h(leafState));
+            try {
+                Thread.sleep(1500);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+            strategy.addToExplored(leafState);
+            for (Graph n : leafState.getExpandedStates()) { // The list of expanded States is shuffled randomly; see State.java.
+                if (!strategy.isExplored(n) && !strategy.inFrontier(n)) {
+                    strategy.addToFrontier(n);
+                }
+            }
+            iterations++;
+        }
+    }
+
+    public void generatePriorityList(Graph graph) {
+        //Går utfra at det kun er 1 boks pr mål, og kun 1 mål pr char
+        Map<Character, Integer> priorityMap = new HashMap<>();
+        for (Node g : graph.getGoalNodes()) {
+            //Initates a new value to the hashmap
+            priorityMap.put(g.getGoal().getLetter(), 0);
+            //Finds all the goals between g and corresponding boxes
+            for (Node b : graph.getBoxNodes()) {
+                if (Character.toLowerCase(b.getBox().getLetter()) == g.getGoal().getLetter()) {
+                    List<Node> path;
+                    try {
+                        path = graph.shortestPath(b, g);
+                    } catch (NoPathFoundException e) {
+                        path = new ArrayList<>();
+                    }
+                    //Counts the amount of goals on the way
+                    for (Node pathNode : path) {
+                        if (pathNode.getGoal() != null) {
+                            //Add value to tmp
+                            priorityMap.put(g.getGoal().getLetter(), priorityMap.get(g.getGoal().getLetter()) + 1);
+                        }
+                    }
+                }
+            }
+        }
+        List<Priority> priorities = new ArrayList<>();
+        for (Character key : priorityMap.keySet()) {
+            Integer priority = priorityMap.get(key);
+            Optional<Priority> optionalPriority = priorities.stream().filter(p -> p.getPriority() == priority).findFirst();
+            if (optionalPriority.isPresent()) {
+                optionalPriority.get().getLetters().add(key);
+            } else {
+                priorities.add(new Priority(new ArrayList<>(Collections.singletonList(key)), priority));
+            }
+        }
+        priorityList.addAll(priorities);
+
+        //Test
+        System.err.println("Prio list bro: " + Arrays.asList(priorityList));
     }
 }
