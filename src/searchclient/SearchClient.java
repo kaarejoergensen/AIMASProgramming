@@ -23,6 +23,7 @@ public class SearchClient {
 
 
     private Graph initialState;
+    private HashMap<Character, Integer> priorityList;
 
     public SearchClient(BufferedReader serverMessages) throws Exception {
         int row = 0;
@@ -119,6 +120,8 @@ public class SearchClient {
         Map<String, Node> nodes = Arrays.stream(tiles).flatMap(Arrays::stream).
                 filter(Objects::nonNull).collect(Collectors.toMap(Node::getId, n -> n));
         this.initialState = new Graph(null, rows, columns, nodes);
+
+        generatePriorityList(initialState);
     }
 
     public List<Graph> Search(Strategy strategy) throws Exception {
@@ -159,6 +162,34 @@ public class SearchClient {
             }
             iterations++;
         }
+    }
+
+    public void generatePriorityList(Graph graph){
+        //Går utfra at det kun er 1 boks pr mål, og kun 1 mål pr char
+        priorityList = new HashMap<>();
+        for(Node g :  graph.getGoalNodes()){
+            //Initates a new value to the hashmap
+            priorityList.put(g.getGoal().getLetter(),0);
+            //Finds all the goals between g and corresponding boxes
+            for(Node b : graph.getBoxNodes()){
+                if( Character.toLowerCase(b.getBox().getLetter()) == g.getGoal().getLetter()) {
+                    List<Node> path = graph.shortestPath(b, g);
+                    //Counts the amount of goals on the way
+                    for (Node pathNode : path) {
+                        if (pathNode.getGoal() != null) {
+                            //Add value to tmp
+                            priorityList.put(g.getGoal().getLetter(), priorityList.get(g.getGoal().getLetter()) + 1 );
+                        }
+                    }
+                }
+            }
+        }
+
+
+
+
+        //Test
+        System.err.println("Prio list bro: " + Arrays.asList(priorityList));
     }
 
     public static void main(String[] args) throws Exception {
