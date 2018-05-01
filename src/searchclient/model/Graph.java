@@ -170,44 +170,38 @@ public class Graph {
         if (fromNode == null || toNode == null || fromNode.equals(toNode)) {
             return new ArrayList<>();
         }
-        LinkedList<Node> result = new LinkedList<>();
-
         List<String> visitedNodes = new ArrayList<>();
         Queue<Node> queue = new LinkedList<>();
-        Stack<Node> pathStack = new Stack<>();
-
+        Map<String, List<Node>> predecessors = new HashMap<>();
 
         visitedNodes.add(fromNode.getId());
         queue.add(fromNode);
+        predecessors.put(fromNode.getId(), new ArrayList<>(Collections.singletonList(fromNode)));
 
         while (!queue.isEmpty()) {
             Node n = queue.poll();
-            if (n.equals(toNode)) {
-                break;
-            }
 
-            List<Edge> edges = n.getEdges();
-            for (Edge edge : edges) {
-                if (!visitedNodes.contains(edge.getDestination()) && this.allNodes.get(edge.getDestination()).canBeMovedTo()) {
-                    queue.add(this.allNodes.get(edge.getDestination()));
+            for (Edge edge : n.getEdges()) {
+                Node destinationNode = this.allNodes.get(edge.getDestination());
+                if (destinationNode.equals(toNode)) {
+                    List<Node> finalList = predecessors.get(n.getId());
+                    finalList.add(toNode);
+                    return finalList;
+                }
+                if (!visitedNodes.contains(edge.getDestination()) &&
+                        destinationNode.canBeMovedTo()) {
+                    queue.add(destinationNode);
                     visitedNodes.add(edge.getDestination());
-                    pathStack.add(this.allNodes.get(edge.getDestination()));
+                    List<Node> predecessorList = new ArrayList<>();
+                    if (predecessors.containsKey(n.getId())) {
+                        predecessorList.addAll(predecessors.get(n.getId()));
+                    }
+                    predecessorList.add(destinationNode);
+                    predecessors.put(edge.getDestination(), predecessorList);
                 }
             }
         }
-
-        Node node, currentSrc = toNode;
-        while(!pathStack.isEmpty()) {
-            node = pathStack.pop();
-            if (isNeighbours(currentSrc, node)) {
-                result.addFirst(node);
-                currentSrc = node;
-                if (node == fromNode) {
-                    break;
-                }
-            }
-        }
-        return result;
+        return new ArrayList<>();
     }
 
     private boolean isNeighbours(Node fromNode, Node toNode) {
