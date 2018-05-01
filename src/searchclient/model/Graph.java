@@ -22,14 +22,23 @@ public class Graph {
 
 
     public Graph(Graph parent, int rows, int columns, List<Node> nodes) {
+        this(parent, rows, columns, nodes, null, null, null);
+    }
+
+    public Graph(Graph parent, int rows, int columns, List<Node> nodes, List<Node> agentNodes,
+                 List<Node> goalNodes, List<Node> boxNodes) {
         this.parent = parent;
         this.rows = rows;
         this.columns = columns;
         this.allNodes = nodes;
 
-        this.agentNodes = nodes.stream().filter(n -> n.getAgent() != null).collect(Collectors.toList());
-        this.goalNodes = nodes.stream().filter(n -> n.getGoal() != null).collect(Collectors.toList());
-        this.boxNodes = nodes.stream().filter(n -> n.getBox() != null).collect(Collectors.toList());
+        this.agentNodes = agentNodes == null ? nodes.stream().filter(n -> n.getAgent() != null).
+                collect(Collectors.toList()): agentNodes;
+        this.goalNodes = goalNodes == null ? nodes.stream().filter(n -> n.getGoal() != null).
+                collect(Collectors.toList()): goalNodes;
+        this.boxNodes = boxNodes == null ? nodes.stream().filter(n -> n.getBox() != null).
+                collect(Collectors.toList()) : boxNodes;
+
         this.actions = new Command[this.agentNodes.size()];
         for (int i = 0; i < this.actions.length; i++) {
             this.actions[i] = new Command();
@@ -59,26 +68,17 @@ public class Graph {
 
     public boolean moveAgent(Node fromNodeOriginal, Node toNodeOriginal) throws Exception {
         int fromIndex = this.allNodes.indexOf(fromNodeOriginal);
-        if (fromIndex < 0) {
-            System.out.println();
-        }
         int toIndex = this.allNodes.indexOf(toNodeOriginal);
-        if (toIndex < 0) {
-            System.out.println();
-        }
-        Node fromNode = this.allNodes.get(this.allNodes.indexOf(fromNodeOriginal));
-        Node toNode = this.allNodes.get(this.allNodes.indexOf(toNodeOriginal));
-        if (fromNode == null || toNode == null) {
+        if (fromIndex < 0 || toIndex < 0) {
             throw new Exception("This should never happen");
         }
+        Node fromNode = this.allNodes.get(fromIndex);
+        Node toNode = this.allNodes.get(toIndex);
         boolean success;
-        if (!fromNode.equals(fromNodeOriginal) || !toNode.equals(toNodeOriginal)) {
-            System.out.println("");
-        }
-        toNode.setAgent(fromNode.getAgent());
-        fromNode.setAgent(null);
         success = this.agentNodes.remove(fromNode);
         success &= this.agentNodes.add(toNode);
+        toNode.setAgent(fromNode.getAgent());
+        fromNode.setAgent(null);
         if (!success) {
             throw new Exception("This should never happen");
         }
@@ -86,22 +86,19 @@ public class Graph {
     }
 
     public boolean moveBox(Node fromNodeOriginal, Node toNodeOriginal) throws Exception {
-        Node fromNode = this.allNodes.get(this.allNodes.indexOf(fromNodeOriginal));
-        Node toNode = this.allNodes.get(this.allNodes.indexOf(toNodeOriginal));
-        if (fromNode == null || toNode == null) {
+        int fromIndex = this.allNodes.indexOf(fromNodeOriginal);
+        int toIndex = this.allNodes.indexOf(toNodeOriginal);
+        if (fromIndex < 0 || toIndex < 0) {
             throw new Exception("This should never happen");
         }
+        Node fromNode = this.allNodes.get(fromIndex);
+        Node toNode = this.allNodes.get(toIndex);
         boolean success;
+        success = this.boxNodes.remove(fromNode);
+        success &= this.boxNodes.add(toNode);
         toNode.setBox(fromNode.getBox());
         fromNode.setBox(null);
-        success = this.boxNodes.remove(fromNode);
         if (!success) {
-            System.out.println(this.toString());
-            throw new Exception("This should never happen");
-        }
-        success &= this.boxNodes.add(toNode);
-        if (!success) {
-            System.out.println(this.toString());
             throw new Exception("This should never happen");
         }
         return  success;
@@ -120,6 +117,9 @@ public class Graph {
     }
 
     public boolean isGoalState() {
+        if (this.goalNodes == null) {
+            System.out.println();
+        }
         for (Node goal : this.goalNodes) {
             if (!this.boxNodes.contains(goal)) {
                 return false;
@@ -201,11 +201,28 @@ public class Graph {
     }
 
     public Graph childState() {
-        List<Node> clone = new ArrayList<>();
+        List<Node> allClone = new ArrayList<>();
         for (Node n : this.allNodes) {
-            clone.add(n.clone());
+            allClone.add(n.clone());
         }
-        return new Graph(this, this.rows, this.columns, clone);
+        List<Node> agentClone = new ArrayList<>();
+        for (Node n : this.agentNodes) {
+            agentClone.add(n.clone());
+        }
+        List<Node> goalClone = new ArrayList<>();
+        for (Node n : this.goalNodes) {
+            goalClone.add(n.clone());
+        }
+        List<Node> boxClone = new ArrayList<>();
+        for (Node n : this.boxNodes) {
+            boxClone.add(n.clone());
+        }
+        Graph graph = new Graph(this, this.rows, this.columns, allClone, agentClone, goalClone, boxClone);
+        if (!this.equals(graph)) {
+            System.out.println();
+            this.equals(graph);
+        }
+        return graph;
     }
 
     public List<Node> shortestPath(Node fromNode, Node toNode) {
