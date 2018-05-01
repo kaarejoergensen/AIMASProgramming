@@ -9,7 +9,7 @@ public abstract class Strategy {
     private final long startTime;
 
     public Strategy() {
-        this.explored = new HashSet<Graph>();
+        this.explored = new HashSet<>();
         this.startTime = System.currentTimeMillis();
     }
 
@@ -52,8 +52,8 @@ public abstract class Strategy {
 
         public StrategyBFS() {
             super();
-            frontier = new ArrayDeque<Graph>();
-            frontierSet = new HashSet<Graph>();
+            frontier = new ArrayDeque<>();
+            frontierSet = new HashSet<>();
         }
 
         @Override
@@ -139,13 +139,12 @@ public abstract class Strategy {
 
         private PriorityQueue<Graph> frontier;
         private HashSet<Graph> frontierSet;
-        int i = 0;
 
         public StrategyBestFirst(Heuristic h) {
             super();
             this.heuristic = h;
-            frontier = new PriorityQueue<Graph>(heuristic);
-            frontierSet = new HashSet<Graph>();
+            frontier = new PriorityQueue<>(heuristic);
+            frontierSet = new HashSet<>();
         }
 
         @Override
@@ -161,8 +160,8 @@ public abstract class Strategy {
             frontierSet.add(n);
         }
 
-        private String text(Graph n ) {
-            return  "f: " + (n.g() + heuristic.h(n) + " g: " + n.g() + " h: " + heuristic.h(n));
+        public int h(Graph n ) {
+            return  heuristic.h(n);
         }
 
         @Override

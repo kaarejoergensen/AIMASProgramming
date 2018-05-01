@@ -3,19 +3,19 @@ package searchclient.model;
 import java.util.Objects;
 
 public class Edge {
-    private Node source;
-    private Node destination;
+    private String source;
+    private String destination;
 
-    public Edge(Node source, Node destination) {
+    public Edge(String source, String destination) {
         this.source = source;
         this.destination = destination;
     }
 
-    public Node getSource() {
+    public String getSource() {
         return source;
     }
 
-    public Node getDestination() {
+    public String getDestination() {
         return destination;
     }
 
@@ -24,12 +24,12 @@ public class Edge {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Edge edge = (Edge) o;
-        return Objects.equals(source.getId(), edge.source.getId()) &&
-                Objects.equals(destination.getId(), edge.destination.getId());
+        return Objects.equals(source, edge.source) &&
+                Objects.equals(destination, edge.destination);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(source.getId(), destination.getId());
+        return Objects.hash(source, destination);
     }
 }

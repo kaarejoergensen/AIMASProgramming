@@ -14,9 +14,6 @@ public abstract class Heuristic implements Comparator<Graph> {
     public int h(Graph graph) {
         int result = 0;
         for (Node agentNode : graph.getAgentNodes()) {
-            if (agentNode == null ||agentNode.getAgent() == null) {
-                System.out.println("lol");
-            }
             List<Node> boxNodesWithSameColor = graph.getBoxNodes().stream().
                     filter(n -> n.getBox() != null && n.getBox().getColor().equals(agentNode.getAgent().getColor())).
                     collect(Collectors.toList());
