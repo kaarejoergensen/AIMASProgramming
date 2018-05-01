@@ -26,6 +26,7 @@ public class Graph {
         this.rows = rows;
         this.columns = columns;
         this.allNodes = nodes;
+
         this.agentNodes = nodes.stream().filter(n -> n.getAgent() != null).collect(Collectors.toList());
         this.goalNodes = nodes.stream().filter(n -> n.getGoal() != null).collect(Collectors.toList());
         this.boxNodes = nodes.stream().filter(n -> n.getBox() != null).collect(Collectors.toList());
