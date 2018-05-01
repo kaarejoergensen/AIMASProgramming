@@ -6,8 +6,6 @@ import searchclient.Heuristic.WeightedAStar;
 import searchclient.Strategy.StrategyBFS;
 import searchclient.Strategy.StrategyBestFirst;
 import searchclient.Strategy.StrategyDFS;
-import searchclient.exceptions.NoPathFoundException;
-import searchclient.model.Edge;
 import searchclient.model.Elements.Agent;
 import searchclient.model.Elements.Box;
 import searchclient.model.Elements.Goal;
@@ -58,35 +56,10 @@ public class SearchClient {
             }
             line = serverMessages.readLine();
         }
-        /*boolean[][] walls = new boolean[rows][columns];
-        char[][] boxes = new char[rows][columns];
-        char[][] goals = new char[rows][columns];
-        char[][] agents = new char[rows][columns];
-
-        for (String string : strings) {
-            for (int col = 0; col < string.length(); col++) {
-                char chr = string.charAt(col);
-
-                if (chr == '+') { // Wall.
-                    walls[row][col] = true;
-                } else if ('0' <= chr && chr <= '9') { // Agent.
-                    agents[row][col] = chr;
-                    numberOfAgents++;
-                } else if ('A' <= chr && chr <= 'Z') { // Box.
-                    boxes[row][col] = chr;
-                } else if ('a' <= chr && chr <= 'z') { // Goal.
-                    goals[row][col] = chr;
-                } else if (chr != ' ') {
-                    System.err.println("Error, read invalid level character: " + (int) chr);
-                    System.exit(1);
-                }
-            }
-            row++;
-        }
-
-        this.initialState = new State(null, columns, rows, numberOfAgents, colorMap, walls, boxes, goals, agents);*/
-
         Node[][] tiles = new Node[rows][columns];
+        Map<String, Agent> agents = new HashMap<>();
+        Map<String, Box> boxes = new HashMap<>();
+        Map<String, Goal> goals = new HashMap<>();
 
         for (String string : strings) {
             for (int col = 0; col < string.length(); col++) {
@@ -94,11 +67,14 @@ public class SearchClient {
                 if (chr != '+') {
                     Node node = null;
                     if ('0' <= chr && chr <= '9') {
-                        node = new Node(col, row, new Agent(chr, colorMap.get(chr)));
+                        node = new Node(col, row);
+                        agents.put(node.getPositionAsString(), new Agent(col, row, chr, colorMap.get(chr)));
                     } else if ('A' <= chr && chr <= 'Z') {
-                        node = new Node(col, row, new Box(chr, colorMap.get(chr)));
+                        node = new Node(col, row);
+                        boxes.put(node.getPositionAsString(), new Box(col, row, chr, colorMap.get(chr)));
                     } else if ('a' <= chr && chr <= 'z') {
-                        node = new Node(col, row, new Goal(chr));
+                        node = new Node(col, row);
+                        goals.put(node.getPositionAsString(), new Goal(col, row, chr));
                     } else if (chr == ' ') {
                         node = new Node(col, row);
                     } else {
@@ -107,12 +83,12 @@ public class SearchClient {
                     }
                     tiles[row][col] = node;
                     if (tiles[row - 1][col] != null) {
-                        node.addEdge(new Edge(node.getId(), tiles[row - 1][col].getId()));
-                        tiles[row - 1][col].addEdge(new Edge(tiles[row - 1][col].getId(), node.getId()));
+                        node.addEdge(tiles[row - 1][col].getPositionAsString());
+                        tiles[row - 1][col].addEdge(node.getPositionAsString());
                     }
                     if (tiles[row][col - 1] != null) {
-                        node.addEdge(new Edge(node.getId(), tiles[row][col - 1].getId()));
-                        tiles[row][col - 1].addEdge(new Edge(tiles[row][col - 1].getId(), node.getId()));
+                        node.addEdge(tiles[row][col - 1].getPositionAsString());
+                        tiles[row][col - 1].addEdge(node.getPositionAsString());
                     }
                 }
             }
@@ -120,8 +96,8 @@ public class SearchClient {
         }
 
         Map<String, Node> nodes = Arrays.stream(tiles).flatMap(Arrays::stream).
-                filter(Objects::nonNull).collect(Collectors.toMap(Node::getId, n -> n));
-        this.initialState = new Graph(null, rows, columns, nodes);
+                filter(Objects::nonNull).collect(Collectors.toMap(Node::getPositionAsString, n -> n));
+        this.initialState = new Graph(null, rows, columns, nodes, agents, boxes, goals);
         generatePriorityList(initialState);
     }
 
@@ -215,14 +191,14 @@ public class SearchClient {
                 return leafState.extractPlan();
             }
 
-            System.out.println(leafState.actionsToString());
-            System.out.println(leafState);
-            System.out.println(((StrategyBestFirst) strategy).h(leafState));
-            try {
-                Thread.sleep(1500);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+//            System.out.println(leafState.actionsToString());
+//            System.out.println(leafState);
+//            System.out.println(((StrategyBestFirst) strategy).h(leafState));
+//            try {
+//                Thread.sleep(1500);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
 
             strategy.addToExplored(leafState);
             for (Graph n : leafState.getExpandedStates()) { // The list of expanded States is shuffled randomly; see State.java.
@@ -237,23 +213,20 @@ public class SearchClient {
     public void generatePriorityList(Graph graph) {
         //Går utfra at det kun er 1 boks pr mål, og kun 1 mål pr char
         Map<Character, Integer> priorityMap = new HashMap<>();
-        for (Node g : graph.getGoalNodes()) {
+        for (Node goalNode : graph.getGoalNodes()) {
             //Initates a new value to the hashmap
-            priorityMap.put(g.getGoal().getLetter(), 0);
+            priorityMap.put(graph.getGoal(goalNode).getLetter(), 0);
             //Finds all the goals between g and corresponding boxes
-            for (Node b : graph.getBoxNodes()) {
-                if (Character.toLowerCase(b.getBox().getLetter()) == g.getGoal().getLetter()) {
-                    List<Node> path;
-                    try {
-                        path = graph.shortestPath(b, g);
-                    } catch (NoPathFoundException e) {
-                        path = new ArrayList<>();
-                    }
+            for (Node boxNode : graph.getBoxNodes()) {
+                if (Character.toLowerCase(graph.getBox(boxNode).getLetter()) == graph.getGoal(goalNode).getLetter()) {
+                    List<Node> path = graph.shortestPath(boxNode, goalNode, false)
+                            .orElse(graph.shortestPath(boxNode, goalNode, true).
+                                    orElse(new ArrayList<>()));
                     //Counts the amount of goals on the way
                     for (Node pathNode : path) {
-                        if (pathNode.getGoal() != null) {
+                        if (graph.getGoal(pathNode) != null) {
                             //Add value to tmp
-                            priorityMap.put(g.getGoal().getLetter(), priorityMap.get(g.getGoal().getLetter()) + 1);
+                            priorityMap.put(graph.getGoal(goalNode).getLetter(), priorityMap.get(graph.getGoal(goalNode).getLetter()) + 1);
                         }
                     }
                 }

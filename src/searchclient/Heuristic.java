@@ -1,10 +1,10 @@
 package searchclient;
 
-import searchclient.exceptions.NoPathFoundException;
 import searchclient.model.Elements.Goal;
 import searchclient.model.Graph;
 import searchclient.model.Node;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -22,29 +22,23 @@ public abstract class Heuristic implements Comparator<Graph> {
 
         for (Node agentNode : graph.getAgentNodes()) {
             List<Node> boxNodesWithSameColor = graph.getBoxNodes().stream().
-                    filter(n -> n.getBox() != null && n.getBox().getColor().equals(agentNode.getAgent().getColor())).
+                    filter(n -> graph.getBox(n) != null && graph.getBox(n).getColor().equals(graph.getAgent(agentNode).getColor())).
                     collect(Collectors.toList());
             for (Node boxNode : boxNodesWithSameColor) {
-                try {
-                    result += 3 * graph.shortestPath(agentNode, boxNode).size();
-                } catch (NoPathFoundException e) {
-                    result += 10000;
-                }
+                result += 3 * graph.shortestPath(agentNode, boxNode, false).
+                        orElse(new ArrayList<>(10000)).size();
             }
         }
         boolean groupDone = true;
         for (Node boxNode : graph.getBoxNodes()) {
             List<Node> goalNodesWithSameLetter = graph.getGoalNodes().stream().
-                    filter(n -> n.getGoal().hasSameLetter(boxNode.getBox())).
+                    filter(n -> graph.getGoal(n).hasSameLetter(graph.getBox(boxNode))).
                     collect(Collectors.toList());
             for (Node goalNode : goalNodesWithSameLetter) {
                 if (!goalNode.equals(boxNode)) {
                     groupDone = false;
-                    try {
-                        result += 10 * (graph.shortestPath(boxNode, goalNode).size() + 1);
-                    } catch (NoPathFoundException e) {
-                        result += 10000;
-                    }
+                    result += 10 * (graph.shortestPath(boxNode, goalNode,false).
+                            orElse(new ArrayList<>(10000)).size() + 1);
                 }
             }
         }
@@ -53,6 +47,10 @@ public abstract class Heuristic implements Comparator<Graph> {
         }
 
         return result;
+    }
+
+    public void setCurrentGoal(Goal newCurrentGoal) {
+        this.currentGoal = newCurrentGoal;
     }
 
     public abstract int f(Graph n);
