@@ -78,32 +78,6 @@ public class SearchClient {
         }
 
         this.initialState = new State(null, columns, rows, numberOfAgents, colorMap, walls, boxes, goals, agents);
-
-//        Node[][] tiles = new Node[rows][columns];
-//
-//        for (String string : strings) {
-//            for (int col = 0; col < string.length(); col++) {
-//                char chr = string.charAt(col);
-//                if (chr != '+') {
-//                    Node node = null;
-//                    if ('0' <= chr && chr <= '9') {
-//                        node = new Node(row, col, new Agent(chr, colorMap.get(chr)));
-//                    } else if ('A' <= chr && chr <= 'Z') {
-//                        node = new Node(row, col, new Box(chr, colorMap.get(chr)));
-//                    } else if ('a' <= chr && chr <= 'z') {
-//                        node = new Node(row, col, new Goal(chr));
-//                    } else if (chr == ' '){
-//                        node = new Node(row, col);
-//                    } else {
-//                        System.err.println("Error, read invalid level character: " + (int) chr);
-//                        System.exit(1);
-//                    }
-//                    tiles[row][col] = node;
-//                }
-//            }
-//            row++;
-//        }
-//        Graph graph = new Graph(null, tiles);
     }
 
     public LinkedList<State> Search(Strategy strategy) throws IOException {

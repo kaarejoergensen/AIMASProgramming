@@ -1,11 +1,10 @@
 package searchclient;
 
+import javafx.geometry.Pos;
 import searchclient.Command.Type;
+import searchclient.model.Position;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.Map;
+import java.util.*;
 
 public class State {
     private State parent;
@@ -133,12 +132,109 @@ public class State {
         return expandedStates;
     }
 
+    public Optional<List<Position>> getShortestPath(Position from, Position to, boolean ignoreObstaclesOnPath) {
+        if (from == null || to == null || from.equals(to)) {
+            return Optional.of(new ArrayList<>());
+        }
+        List<Position> visitedNodes = new ArrayList<>();
+        Queue<Position> queue = new LinkedList<>();
+        Map<Position, List<Position>> predecessors = new HashMap<>();
+
+        visitedNodes.add(to);
+        queue.add(from);
+        predecessors.put(from, new ArrayList<>(Collections.singletonList(from)));
+
+        while (!queue.isEmpty()) {
+            Position n = queue.poll();
+
+            for (Position edge : getNeighbours(n)) {
+                if (edge.equals(to)) {
+                    List<Position> finalList = predecessors.get(n);
+                    finalList.add(to);
+                    return Optional.of(finalList);
+                }
+                if (!visitedNodes.contains(edge) &&
+                        (cellIsFree(edge.row, edge.col) || ignoreObstaclesOnPath)) {
+                    queue.add(edge);
+                    visitedNodes.add(edge);
+                    List<Position> predecessorList = new ArrayList<>();
+                    if (predecessors.containsKey(n)) {
+                        predecessorList.addAll(predecessors.get(n));
+                    }
+                    predecessorList.add(edge);
+                    predecessors.put(edge, predecessorList);
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
+    private List<Position> getNeighbours(Position position) {
+        List<Position> result = new ArrayList<>();
+        if (position.row > 0 && !this.walls[position.row - 1][position.col]) {
+            result.add(new Position(position.row - 1, position.col));
+        }
+        if (position.row < rows - 1 && !this.walls[position.row + 1][position.col]) {
+            result.add(new Position(position.row + 1, position.col));
+        }
+        if (position.col > 0 && !this.walls[position.row][position.col - 1]) {
+            result.add(new Position(position.row, position.col - 1));
+        }
+        if (position.col < columns - 1 && !this.walls[position.row][position.col + 1]) {
+            result.add(new Position(position.row, position.col + 1));
+        }
+        return result;
+    }
+
+    private boolean cellIsFree(int row, int col) {
+        return !this.walls[row][col] && this.boxes[row][col] == 0 && this.agents[row][col] == 0;
+    }
+
     private boolean cellIsFree(int row, int col, char agent) {
         return !this.walls[row][col] && this.boxes[row][col] == 0 && (this.agents[row][col] == 0 || this.agents[row][col]==agent);
     }
 
     private boolean boxAt(int row, int col) {
         return this.boxes[row][col] > 0;
+    }
+
+    public List<Position> getAgentPositions() {
+        List<Position> result = new ArrayList<>();
+        for (int row = 1; row < rows - 1; row++) {
+            for (int col = 1; col < columns - 1; col++) {
+                char a = this.agents[row][col];
+                if (a > 0) {
+                    result.add(new Position(row, col));
+                }
+            }
+        }
+        return result;
+    }
+
+    public List<Position> getBoxPositions() {
+        List<Position> result = new ArrayList<>();
+        for (int row = 1; row < rows - 1; row++) {
+            for (int col = 1; col < columns - 1; col++) {
+                char b = this.boxes[row][col];
+                if (b > 0) {
+                    result.add(new Position(row, col));
+                }
+            }
+        }
+        return result;
+    }
+
+    public List<Position> getGoalPositions() {
+        List<Position> result = new ArrayList<>();
+        for (int row = 1; row < rows - 1; row++) {
+            for (int col = 1; col < columns - 1; col++) {
+                char g = this.goals[row][col];
+                if (g > 0) {
+                    result.add(new Position(row, col));
+                }
+            }
+        }
+        return result;
     }
 
     private boolean boxAndAgentSameColor(char box, char agent) {
