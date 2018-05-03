@@ -1,6 +1,5 @@
 package searchclient;
 
-import com.sun.deploy.util.SessionState;
 import searchclient.Heuristic.AStar;
 import searchclient.Heuristic.Greedy;
 import searchclient.Heuristic.WeightedAStar;
@@ -15,7 +14,6 @@ import searchclient.model.Node;
 import searchclient.model.Priority;
 
 import java.io.*;
-import java.nio.Buffer;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -196,20 +194,16 @@ public class SearchClient {
 
                 Graph leafState = strategy.getAndRemoveLeaf();
 
-                List<Node> tmp_goals = leafState.getPrioirtyGoalNodes();
-                List<Node> tmp_boxes = leafState.getPriorityBoxNodes();
-
-
-                if (leafState.isSubGoalState(tmp_goals, tmp_boxes)) {
+                if (leafState.isSubGoalState()) {
                     if (priorityList.isEmpty()) return leafState.extractPlan();
                     full_plan.addAll(leafState.extractPlan());
                     break;
                 }
 
-//            System.out.println(leafState.actionsToString());
-                //System.err.println(leafState);
-//            System.out.println(((StrategyBestFirst) strategy).h(leafState));
-
+                System.err.println(leafState.actionsToString());
+                System.err.println(leafState);
+                System.err.println(((StrategyBestFirst)strategy).h(leafState));
+                Thread.sleep(1000);
 
                 strategy.addToExplored(leafState);
                 for (Graph n : leafState.getExpandedStates()) { // The list of expanded States is shuffled randomly; see State.java.

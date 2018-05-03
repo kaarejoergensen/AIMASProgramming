@@ -38,6 +38,8 @@ public class ColeredElement {
     }
 
     public boolean hasSameLetter(ColeredElement other) {
+        if (other == null)
+            return false;
         return Character.toLowerCase(this.letter) == Character.toLowerCase(other.getLetter());
     }
 

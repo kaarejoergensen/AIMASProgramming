@@ -55,7 +55,7 @@ public class Graph {
         this.h = h;
     }
 
-    public List<Node> getPrioirtyGoalNodes(){
+    public List<Node> getPriorityGoalNodes(){
         List<Node> tmp_goals = new ArrayList<>();
         for(Node n : this.getGoalNodes()){
             Character x = getGoal(n).getLetter();
@@ -172,16 +172,13 @@ public class Graph {
         return true;
     }
 
-    public boolean isSubGoalState(List<Node> goalNodes, List<Node> boxNodes){
-        for (Node goal : goalNodes) {
-            if (!boxNodes.contains(goal)) {
-                return false;
-            }
-        }
-        return true;
+    public boolean isSubGoalState(){
+        List<Node> goalNodes = this.getPriorityGoalNodes();
+        List<Node> boxNodes = this.getPriorityBoxNodes();
+        return goalNodes.equals(boxNodes) && goalNodes.stream().allMatch(g -> getGoal(g).hasSameLetter(getBox(g)));
     }
 
-    public List<Graph> getExpandedStates() throws Exception {
+    public List<Graph> getExpandedStates() {
         List<Graph> expandedStates = new ArrayList<>();
         for (Node agentNode : this.getSpecificAgents()) {
             for (String edge : agentNode.getEdges()) {
