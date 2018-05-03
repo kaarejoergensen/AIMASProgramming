@@ -1,38 +1,33 @@
 package searchclient.model;
 
 import searchclient.Command;
+import searchclient.model.Elements.Agent;
+import searchclient.model.Elements.Box;
+import searchclient.model.Elements.Goal;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class Graph {
     private Graph parent;
     private int rows;
     private int columns;
     private Map<String, Node> allNodes;
-    private List<String> agentIDs;
-    private List<String> boxIDs;
-    private List<String> goalIDs;
+    private Map<String, Agent> agents;
+    private Map<String, Box> boxes;
+    private Map<String, Goal> goals;
     private int g;
     private Command[] actions;
     private int h;
 
-    public Graph(Graph parent, int rows, int columns, Map<String, Node> allNodes) {
-        this(parent, rows, columns, allNodes, null, null, null);
-    }
-
     public Graph(Graph parent, int rows, int columns, Map<String, Node> nodes,
-                 List<String> agentIDs, List<String> boxIDs, List<String> goalIDs) {
+                 Map<String, Agent> agents, Map<String, Box> boxes, Map<String, Goal> goals) {
         this.parent = parent;
         this.rows = rows;
         this.columns = columns;
         this.allNodes = nodes;
-        this.agentIDs = agentIDs == null ? this.allNodes.values().stream().
-                filter(n -> n.getAgent() != null).map(Node::getId).collect(Collectors.toList()) : agentIDs;
-        this.boxIDs = boxIDs == null ? this.allNodes.values().stream().
-                filter(n -> n.getBox() != null).map(Node::getId).collect(Collectors.toList()) : boxIDs;
-        this.goalIDs = goalIDs == null ? this.allNodes.values().stream().
-                filter(n -> n.getGoal() != null).map(Node::getId).collect(Collectors.toList()) : goalIDs;
+        this.agents = agents;
+        this.boxes = boxes;
+        this.goals = goals;
         this.actions = new Command[this.getAgentNodes().size()];
         for (int i = 0; i < this.actions.length; i++) {
             this.actions[i] = new Command();
@@ -58,39 +53,53 @@ public class Graph {
     }
 
     public List<Node> getAgentNodes() {
-        List<Node> newList = new ArrayList<>();
-        agentIDs.forEach(s -> newList.add(this.allNodes.get(s)));
-        return Collections.unmodifiableList(newList);
+        List<Node> result = new ArrayList<>();
+        this.agents.values().forEach(a -> result.add(this.allNodes.get(a.getNodeID())));
+        return Collections.unmodifiableList(result);
     }
 
     public List<Node> getGoalNodes() {
-        List<Node> newList = new ArrayList<>();
-        goalIDs.forEach(s -> newList.add(this.allNodes.get(s)));
-        return Collections.unmodifiableList(newList);
+        List<Node> result = new ArrayList<>();
+        this.goals.values().forEach(a -> result.add(this.allNodes.get(a.getNodeID())));
+        return Collections.unmodifiableList(result);
     }
 
     public List<Node> getBoxNodes() {
-        List<Node> newList = new ArrayList<>();
-        boxIDs.forEach(s -> newList.add(this.allNodes.get(s)));
-        return Collections.unmodifiableList(newList);
+        List<Node> result = new ArrayList<>();
+        this.boxes.values().forEach(a -> result.add(this.allNodes.get(a.getNodeID())));
+        return Collections.unmodifiableList(result);
     }
 
-    public void moveAgent(Node fromNodeOriginal, Node toNodeOriginal) throws Exception {
-        Node fromNode = this.allNodes.get(fromNodeOriginal.getId());
-        Node toNode = this.allNodes.get(toNodeOriginal.getId());
-        toNode.setAgent(fromNode.getAgent());
-        fromNode.setAgent(null);
-        this.agentIDs.remove(fromNode.getId());
-        this.agentIDs.add(toNode.getId());
+    public void moveAgent(Node fromNode, Node toNode) {
+        if (!this.agents.containsKey(fromNode.getId()) ||
+                this.agents.containsKey(toNode.getId())) {
+            return;
+        }
+        Agent agent = this.agents.remove(fromNode.getId());
+        agent.setNodeID(toNode.getId());
+        this.agents.put(agent.getNodeID(), agent);
     }
 
-    public void moveBox(Node fromNodeOriginal, Node toNodeOriginal) throws Exception {
-        Node fromNode = this.allNodes.get(fromNodeOriginal.getId());
-        Node toNode = this.allNodes.get(toNodeOriginal.getId());
-        toNode.setBox(fromNode.getBox());
-        fromNode.setBox(null);
-        this.boxIDs.remove(fromNode.getId());
-        this.boxIDs.add(toNode.getId());
+    public void moveBox(Node fromNode, Node toNode) {
+        if (!this.boxes.containsKey(fromNode.getId()) ||
+                this.boxes.containsKey(toNode.getId())) {
+            return;
+        }
+        Box box = this.boxes.remove(fromNode.getId());
+        box.setNodeID(toNode.getId());
+        this.boxes.put(box.getNodeID(), box);
+    }
+
+    public Agent getAgent(Node node) {
+        return this.agents.get(node.getId());
+    }
+
+    public Box getBox(Node node) {
+        return this.boxes.get(node.getId());
+    }
+
+    public Goal getGoal(Node node) {
+        return this.goals.get(node.getId());
     }
 
     public Graph getParent() {
@@ -121,22 +130,22 @@ public class Graph {
         for (Node agentNode : this.getAgentNodes()) {
             for (String edge : agentNode.getEdges()) {
                 Node newAgentNode = this.allNodes.get(edge);
-                if (newAgentNode.canBeMovedTo()) {
+                if (canBeMovedTo(newAgentNode)) {
                     Command command = new Command(getDir(agentNode, newAgentNode));
                     Graph graph = this.childState();
-                    graph.actions[Character.getNumericValue(agentNode.getAgent().getLetter())] = command;
+                    graph.actions[Character.getNumericValue(this.agents.get(agentNode.getId()).getLetter())] = command;
                     graph.moveAgent(agentNode, newAgentNode);
                     expandedStates.add(graph);
-                } else if (newAgentNode.getBox() != null &&
-                        newAgentNode.getBox().getColor().equals(agentNode.getAgent().getColor())) {
+                } else if (this.boxes.get(newAgentNode.getId()) != null &&
+                        this.boxes.get(newAgentNode.getId()).getColor().equals(this.agents.get(agentNode.getId()).getColor())) {
                     for (String newAgentNodeEdge : newAgentNode.getEdges()) {
                         Node newBoxNode = this.allNodes.get(newAgentNodeEdge);
-                        if (newBoxNode.canBeMovedTo()) {
+                        if (canBeMovedTo(newBoxNode)) {
                             Command command = new Command(Command.Type.Push, getDir(agentNode, newAgentNode),
                                     getDir(newAgentNode, newBoxNode));
                             if (!Command.isOpposite(command.dir1, command.dir2)) {
                                 Graph graph = this.childState();
-                                graph.actions[Character.getNumericValue(agentNode.getAgent().getLetter())] = command;
+                                graph.actions[Character.getNumericValue(this.agents.get(agentNode.getId()).getLetter())] = command;
                                 graph.moveAgent(agentNode, newAgentNode);
                                 graph.moveBox(newAgentNode, newBoxNode);
                                 expandedStates.add(graph);
@@ -145,11 +154,11 @@ public class Graph {
                     }
                     for (String newAgentNodeEdge : agentNode.getEdges()) {
                         Node newAgentNode1 = this.allNodes.get(newAgentNodeEdge);
-                        if (newAgentNode1.canBeMovedTo()) {
+                        if (canBeMovedTo(newAgentNode1)) {
                             Command command = new Command(Command.Type.Pull, getDir(agentNode, newAgentNode1),
                                     getDir(newAgentNode, agentNode));
                             Graph graph = this.childState();
-                            graph.actions[Character.getNumericValue(agentNode.getAgent().getLetter())] = command;
+                            graph.actions[Character.getNumericValue(this.agents.get(agentNode.getId()).getLetter())] = command;
                             graph.moveAgent(agentNode, newAgentNode1);
                             graph.moveBox(newAgentNode, agentNode);
                             expandedStates.add(graph);
@@ -160,6 +169,11 @@ public class Graph {
         }
         return expandedStates;
     }
+
+    public boolean canBeMovedTo(Node node) {
+        return !this.agents.containsKey(node.getId()) && !this.boxes.containsKey(node.getId());
+    }
+
 
     private Command.Dir getDir(Node fromNode, Node toNode) {
         int newX = toNode.getX().compareTo(fromNode.getX());
@@ -189,14 +203,15 @@ public class Graph {
     }
 
     public Graph childState() {
-        Map<String, Node> allClone = new HashMap<>();
-        for (Node n : this.allNodes.values()) {
-            allClone.put(n.getId(), n.clone());
+        Map<String, Agent> agentClone = new HashMap<>();
+        for (Agent agent : this.agents.values()) {
+            agentClone.put(agent.getNodeID(), agent.clone());
         }
-        List<String> agentClone = new ArrayList<>(this.agentIDs);
-        List<String> boxClone = new ArrayList<>(this.boxIDs);
-        return new Graph(this, this.rows, this.columns, allClone,
-                agentClone, boxClone, this.goalIDs);
+        Map<String, Box> boxClone = new HashMap<>();
+        for (Box box : this.boxes.values()) {
+            boxClone.put(box.getNodeID(), box.clone());
+        }
+        return new Graph(this, this.rows, this.columns, this.allNodes, agentClone, boxClone, this.goals);
     }
 
     public Optional<List<Node>> shortestPath(Node fromNode, Node toNode, boolean ignoreObstaclesOnPath) {
@@ -222,7 +237,7 @@ public class Graph {
                     return Optional.of(finalList);
                 }
                 if (!visitedNodes.contains(edge) &&
-                        (destinationNode.canBeMovedTo() || ignoreObstaclesOnPath)) {
+                        (ignoreObstaclesOnPath || canBeMovedTo(destinationNode))) {
                     queue.add(destinationNode);
                     visitedNodes.add(edge);
                     List<Node> predecessorList = new ArrayList<>();
@@ -261,12 +276,12 @@ public class Graph {
                 Optional<Node> node = this.allNodes.values().stream().filter(n -> n.getY() == finalRow
                         && n.getX() == finalCol).findFirst();
                 if (node.isPresent()) {
-                    if (node.get().getBox() != null) {
-                        stringBuilder.append(node.get().getBox().getLetter());
-                    } else if (node.get().getGoal() != null) {
-                        stringBuilder.append(node.get().getGoal().getLetter());
-                    } else if (node.get().getAgent() != null) {
-                        stringBuilder.append(node.get().getAgent().getLetter());
+                    if (this.boxes.containsKey(node.get().getId())) {
+                        stringBuilder.append(this.boxes.get(node.get().getId()).getLetter());
+                    } else if (this.goals.containsKey(node.get().getId())) {
+                        stringBuilder.append(this.goals.get(node.get().getId()).getLetter());
+                    } else if (this.agents.containsKey(node.get().getId())) {
+                        stringBuilder.append(this.agents.get(node.get().getId()).getLetter());
                     } else {
                         stringBuilder.append(' ');
                     }
@@ -279,18 +294,18 @@ public class Graph {
         return stringBuilder.toString();
     }
 
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Graph graph = (Graph) o;
         return Objects.equals(getAgentNodes(), graph.getAgentNodes()) &&
-                Objects.equals(getBoxNodes(), graph.getBoxNodes()) &&
-                Objects.equals(getGoalNodes(), graph.getGoalNodes());
+                Objects.equals(getBoxNodes(), graph.getBoxNodes());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getAgentNodes(), getBoxNodes(), getGoalNodes());
+        return Objects.hash(getAgentNodes(), getBoxNodes());
     }
 }

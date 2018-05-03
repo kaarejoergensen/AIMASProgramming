@@ -3,10 +3,12 @@ package searchclient.model.Elements;
 import java.util.Objects;
 
 public class ColeredElement {
+    private String nodeID;
     private char letter;
     private String color;
 
-    public ColeredElement(char letter, String color) {
+    public ColeredElement(String nodeID, char letter, String color) {
+        this.nodeID = nodeID;
         this.letter = letter;
         this.color = color;
     }
@@ -25,6 +27,14 @@ public class ColeredElement {
 
     public void setColor(String color) {
         this.color = color;
+    }
+
+    public String getNodeID() {
+        return nodeID;
+    }
+
+    public void setNodeID(String nodeID) {
+        this.nodeID = nodeID;
     }
 
     public boolean hasSameLetter(ColeredElement other) {

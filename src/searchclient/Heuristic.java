@@ -25,7 +25,7 @@ public abstract class Heuristic implements Comparator<Graph> {
 
         for (Node agentNode : graph.getAgentNodes()) {
             List<Node> boxNodesWithSameColor = graph.getBoxNodes().stream().
-                    filter(n -> n.getBox() != null && n.getBox().getColor().equals(agentNode.getAgent().getColor())).
+                    filter(n -> graph.getBox(n) != null && graph.getBox(n).getColor().equals(graph.getAgent(agentNode).getColor())).
                     collect(Collectors.toList());
             for (Node boxNode : boxNodesWithSameColor) {
                 result += 3 * graph.shortestPath(agentNode, boxNode, false).
@@ -35,7 +35,7 @@ public abstract class Heuristic implements Comparator<Graph> {
         boolean groupDone = true;
         for (Node boxNode : graph.getBoxNodes()) {
             List<Node> goalNodesWithSameLetter = graph.getGoalNodes().stream().
-                    filter(n -> n.getGoal().hasSameLetter(boxNode.getBox())).
+                    filter(n -> graph.getGoal(n).hasSameLetter(graph.getBox(boxNode))).
                     collect(Collectors.toList());
             for (Node goalNode : goalNodesWithSameLetter) {
                 if (!goalNode.equals(boxNode)) {
