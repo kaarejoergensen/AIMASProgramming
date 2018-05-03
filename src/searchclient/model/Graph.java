@@ -39,7 +39,7 @@ public class Graph {
             this.g = 0;
         } else {
             this.g = this.parent.g + 1;
-            if(this.parent.priority != null){
+            if (this.parent.priority != null) {
                 this.priority = this.parent.priority;
             }
 
@@ -55,12 +55,12 @@ public class Graph {
         this.h = h;
     }
 
-    public List<Node> getPriorityGoalNodes(){
+    public List<Node> getPriorityGoalNodes() {
         List<Node> tmp_goals = new ArrayList<>();
-        for(Node n : this.getGoalNodes()){
+        for (Node n : this.getGoalNodes()) {
             Character x = getGoal(n).getLetter();
-            for(Character t : priority.getLetters()){
-                if(Character.toLowerCase(x) == Character.toLowerCase(t)){
+            for (Character t : priority.getLetters()) {
+                if (Character.toLowerCase(x) == Character.toLowerCase(t)) {
                     tmp_goals.add(n);
                 }
             }
@@ -68,12 +68,12 @@ public class Graph {
         return tmp_goals;
     }
 
-    public List<Node> getPriorityBoxNodes(){
+    public List<Node> getPriorityBoxNodes() {
         List<Node> tmp_boxes = new ArrayList<>();
-        for(Node n : this.getBoxNodes()){
+        for (Node n : this.getBoxNodes()) {
             Character x = getBox(n).getLetter();
-            for(Character t : priority.getLetters()){
-                if(Character.toLowerCase(x) == Character.toLowerCase(t)){
+            for (Character t : priority.getLetters()) {
+                if (Character.toLowerCase(x) == Character.toLowerCase(t)) {
                     tmp_boxes.add(n);
                 }
             }
@@ -81,12 +81,12 @@ public class Graph {
         return tmp_boxes;
     }
 
-    public List<Node> getSpecificAgents(){
+    public List<Node> getSpecificAgents() {
         List<Node> tmp_agents = new ArrayList<>();
         List<Node> relevantBoxes = getPriorityBoxNodes();
-        for(Node b : relevantBoxes){
-            for(Node a : getAgentNodes()){
-                if(getAgent(a).getColor().equals(getBox(b).getColor())){
+        for (Node b : relevantBoxes) {
+            for (Node a : getAgentNodes()) {
+                if (getAgent(a).getColor().equals(getBox(b).getColor())) {
                     tmp_agents.add(a);
                 }
             }
@@ -172,7 +172,7 @@ public class Graph {
         return true;
     }
 
-    public boolean isSubGoalState(){
+    public boolean isSubGoalState() {
         List<Node> goalNodes = this.getPriorityGoalNodes();
         List<Node> boxNodes = this.getPriorityBoxNodes();
         return goalNodes.equals(boxNodes) && goalNodes.stream().allMatch(g -> getGoal(g).hasSameLetter(getBox(g)));
@@ -223,6 +223,12 @@ public class Graph {
         return expandedStates;
     }
 
+    public boolean canBeMovedTo(Node node, Agent ignoreAgent) {
+        return (!this.agents.containsKey(node.getId()) ||
+                (ignoreAgent != null && this.agents.get(node.getId()).equals(ignoreAgent))) &&
+                !this.boxes.containsKey(node.getId());
+    }
+
     public boolean canBeMovedTo(Node node) {
         return !this.agents.containsKey(node.getId()) && !this.boxes.containsKey(node.getId());
     }
@@ -267,9 +273,15 @@ public class Graph {
         return new Graph(this, this.rows, this.columns, this.allNodes, agentClone, boxClone, this.goals);
     }
 
-    public Optional<List<Node>> shortestPath(Node fromNode, Node toNode, boolean ignoreObstaclesOnPath) {
+    public Optional<List<Node>> shortestPath(Node fromNode, Node toNode, boolean ignoreObstaclesOnPath, Agent ignoreAgent) {
         if (fromNode == null || toNode == null || fromNode.equals(toNode)) {
             return Optional.of(new ArrayList<>());
+        }
+        if (fromNode.getEdges().contains(toNode.getId())) {
+            return Optional.of(Collections.singletonList(fromNode));
+        }
+        if (getGoal(toNode) != null && !canBeMovedTo(toNode, ignoreAgent)) {
+            return Optional.empty();
         }
         List<String> visitedNodes = new ArrayList<>();
         Queue<Node> queue = new LinkedList<>();
@@ -286,11 +298,10 @@ public class Graph {
                 Node destinationNode = this.allNodes.get(edge);
                 if (destinationNode.equals(toNode)) {
                     List<Node> finalList = predecessors.get(n.getId());
-                    finalList.add(toNode);
                     return Optional.of(finalList);
                 }
                 if (!visitedNodes.contains(edge) &&
-                        (ignoreObstaclesOnPath || canBeMovedTo(destinationNode))) {
+                        (ignoreObstaclesOnPath || canBeMovedTo(destinationNode, ignoreAgent))) {
                     queue.add(destinationNode);
                     visitedNodes.add(edge);
                     List<Node> predecessorList = new ArrayList<>();

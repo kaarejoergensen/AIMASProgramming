@@ -7,6 +7,7 @@ import searchclient.model.Node;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public abstract class Heuristic implements Comparator<Graph> {
@@ -28,18 +29,16 @@ public abstract class Heuristic implements Comparator<Graph> {
                     filter(n -> graph.getBox(n) != null && graph.getBox(n).getColor().equals(graph.getAgent(agentNode).getColor())).
                     collect(Collectors.toList());
             for (Node boxNode : boxNodesWithSameColor) {
-                result += graph.shortestPath(agentNode, boxNode, false).
-                        orElse(new ArrayList<>(10)).size();
-            }
-        }
-        for (Node boxNode : graph.getPriorityBoxNodes()) {
-            List<Node> goalNodesWithSameLetter = graph.getPriorityGoalNodes().stream().
-                    filter(n -> graph.getGoal(n).hasSameLetter(graph.getBox(boxNode))).
-                    collect(Collectors.toList());
-            for (Node goalNode : goalNodesWithSameLetter) {
-                if (!goalNode.equals(boxNode)) {
-                    result += 2 * (graph.shortestPath(boxNode, goalNode, false).
-                            orElse(new ArrayList<>(10)).size() + 1);
+                result += graph.shortestPath(agentNode, boxNode, false, graph.getAgent(agentNode))
+                        .map(List::size).orElse(100);
+                List<Node> goalNodesWithSameLetter = graph.getPriorityGoalNodes().stream().
+                        filter(n -> graph.getGoal(n).hasSameLetter(graph.getBox(boxNode))).
+                        collect(Collectors.toList());
+                for (Node goalNode : goalNodesWithSameLetter) {
+                    if (!goalNode.equals(boxNode)) {
+                        result += graph.shortestPath(boxNode, goalNode, false, graph.getAgent(agentNode))
+                                .map(nodes -> 2 * nodes.size()).orElse(100);
+                    }
                 }
             }
         }

@@ -172,15 +172,15 @@ public class SearchClient {
     public List<Graph> Search(Strategy strategy) throws Exception {
         System.err.format("Search starting with strategy %s.\n", strategy.toString());
 
-        List<Graph> full_plan = new LinkedList<>();
-        full_plan.add(initialState);
+        List<Graph> fullPlan = new LinkedList<>();
+        fullPlan.add(initialState);
 
         int iterations = 0;
         while (!priorityList.isEmpty()) {
             Priority p = priorityList.poll();
 
-            full_plan.get(full_plan.size() - 1).setPriority(p);
-            strategy.addToFrontier(full_plan.get(full_plan.size() - 1));
+            fullPlan.get(fullPlan.size() - 1).setPriority(p);
+            strategy.addToFrontier(fullPlan.get(fullPlan.size() - 1));
 
             while (true) {
                 if (iterations == 1000) {
@@ -196,7 +196,7 @@ public class SearchClient {
 
                 if (leafState.isSubGoalState()) {
                     if (priorityList.isEmpty()) return leafState.extractPlan();
-                    full_plan.addAll(leafState.extractPlan());
+                    fullPlan.addAll(leafState.extractPlan());
                     break;
                 }
 
@@ -206,8 +206,9 @@ public class SearchClient {
                 Thread.sleep(1000);
 
                 strategy.addToExplored(leafState);
-                for (Graph n : leafState.getExpandedStates()) { // The list of expanded States is shuffled randomly; see State.java.
+                for (Graph n : leafState.getExpandedStates()) {
                     if (!strategy.isExplored(n) && !strategy.inFrontier(n)) {
+                        ((StrategyBestFirst) strategy).h(n);
                         strategy.addToFrontier(n);
                     }
                 }
@@ -216,7 +217,7 @@ public class SearchClient {
             strategy.clearFrontier();
         }
 
-        return full_plan;
+        return fullPlan;
 
     }
 
@@ -229,8 +230,8 @@ public class SearchClient {
             //Finds all the goals between g and corresponding boxes
             for (Node boxNode : graph.getBoxNodes()) {
                 if (Character.toLowerCase(graph.getBox(boxNode).getLetter()) == graph.getGoal(goalNode).getLetter()) {
-                    List<Node> path = graph.shortestPath(boxNode, goalNode, false)
-                            .orElse(graph.shortestPath(boxNode, goalNode, true).
+                    List<Node> path = graph.shortestPath(boxNode, goalNode, false, null)
+                            .orElse(graph.shortestPath(boxNode, goalNode, true, null).
                                     orElse(new ArrayList<>()));
                     //Counts the amount of goals on the way
                     for (Node pathNode : path) {
