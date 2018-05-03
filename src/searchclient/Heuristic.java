@@ -20,8 +20,8 @@ public abstract class Heuristic implements Comparator<Graph> {
     public int h(Graph graph) {
         int result = 0;
 
-        for (Node agentNode : graph.getAgentNodes()) {
-            List<Node> boxNodesWithSameColor = graph.getBoxNodes().stream().
+        for (Node agentNode : graph.getSpecificAgents()) {
+            List<Node> boxNodesWithSameColor = graph.getPriorityBoxNodes().stream().
                     filter(n -> n.getBox() != null && n.getBox().getColor().equals(agentNode.getAgent().getColor())).
                     collect(Collectors.toList());
             for (Node boxNode : boxNodesWithSameColor) {
@@ -33,15 +33,15 @@ public abstract class Heuristic implements Comparator<Graph> {
             }
         }
         boolean groupDone = true;
-        for (Node boxNode : graph.getBoxNodes()) {
-            List<Node> goalNodesWithSameLetter = graph.getGoalNodes().stream().
+        for (Node boxNode : graph.getPriorityBoxNodes()) {
+            List<Node> goalNodesWithSameLetter = graph.getPrioirtyGoalNodes().stream().
                     filter(n -> n.getGoal().hasSameLetter(boxNode.getBox())).
                     collect(Collectors.toList());
             for (Node goalNode : goalNodesWithSameLetter) {
                 if (!goalNode.equals(boxNode)) {
                     groupDone = false;
                     try {
-                        result += 10 * (graph.shortestPath(boxNode, goalNode).size() + 1);
+                        result += 10 *  (graph.shortestPath(boxNode, goalNode).size() + 1);
                     } catch (NoPathFoundException e) {
                         result += 10000;
                     }

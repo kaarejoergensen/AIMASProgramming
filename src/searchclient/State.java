@@ -1,6 +1,7 @@
 package searchclient;
 
 import searchclient.Command.Type;
+import searchclient.model.Node;
 
 import java.util.*;
 
@@ -22,6 +23,8 @@ public class State {
     private int g;
 
     private int _hash = 0;
+
+
 
     public State(State parent, int columns, int rows, int numberOfAgents, Map<Character, String> colormap,
                  boolean[][] walls, char[][] boxes, char[][] goals, char[][] agents) {

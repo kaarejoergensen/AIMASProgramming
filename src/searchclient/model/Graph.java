@@ -2,7 +2,9 @@ package searchclient.model;
 
 import searchclient.Command;
 import searchclient.exceptions.NoPathFoundException;
+import searchclient.model.Elements.Agent;
 
+import java.lang.reflect.Array;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -13,6 +15,7 @@ public class Graph {
     private Map<String, Node> allNodes;
     private int g;
     private Command[] actions;
+    private Priority priority;
 
 
     public Graph(Graph parent, int rows, int columns, Map<String, Node> nodes) {
@@ -20,6 +23,9 @@ public class Graph {
         this.rows = rows;
         this.columns = columns;
         this.allNodes = nodes;
+
+
+
         this.actions = new Command[this.getAgentNodes().size()];
         for (int i = 0; i < this.actions.length; i++) {
             this.actions[i] = new Command();
@@ -28,7 +34,51 @@ public class Graph {
             this.g = 0;
         } else {
             this.g = this.parent.g + 1;
+            if(this.parent.priority != null){
+                this.priority = this.parent.priority;
+            }
         }
+
+
+    }
+
+    public List<Node> getPrioirtyGoalNodes(){
+        List<Node> tmp_goals = new ArrayList<>();
+        for(Node n : this.getGoalNodes()){
+            Character x = n.getGoal().getLetter();
+            for(Character t : priority.getLetters()){
+                if(Character.toLowerCase(x) == Character.toLowerCase(t)){
+                    tmp_goals.add(n);
+                }
+            }
+        }
+        return tmp_goals;
+    }
+
+    public List<Node> getPriorityBoxNodes(){
+        List<Node> tmp_boxes = new ArrayList<>();
+        for(Node n : this.getBoxNodes()){
+            Character x = n.getBox().getLetter();
+            for(Character t : priority.getLetters()){
+                if(Character.toLowerCase(x) == Character.toLowerCase(t)){
+                    tmp_boxes.add(n);
+                }
+            }
+        }
+        return tmp_boxes;
+    }
+
+    public List<Node> getSpecificAgents(){
+        List<Node> tmp_agents = new ArrayList<>();
+        List<Node> relevantBoxes = getPriorityBoxNodes();
+        for(Node b : relevantBoxes){
+            for(Node a : getAgentNodes()){
+                if(a.getAgent().getColor().equals(b.getBox().getColor())){
+                    tmp_agents.add(a);
+                }
+            }
+        }
+        return tmp_agents;
     }
 
     public Map<String, Node> getAllNodes() {
@@ -50,14 +100,14 @@ public class Graph {
                 collect(Collectors.toList()));
     }
 
-    public void moveAgent(Node fromNodeOriginal, Node toNodeOriginal) throws Exception {
+    private void moveAgent(Node fromNodeOriginal, Node toNodeOriginal) throws Exception {
         Node fromNode = this.allNodes.get(fromNodeOriginal.getId());
         Node toNode = this.allNodes.get(toNodeOriginal.getId());
         toNode.setAgent(fromNode.getAgent());
         fromNode.setAgent(null);
     }
 
-    public void moveBox(Node fromNodeOriginal, Node toNodeOriginal) throws Exception {
+    private void moveBox(Node fromNodeOriginal, Node toNodeOriginal) throws Exception {
         Node fromNode = this.allNodes.get(fromNodeOriginal.getId());
         Node toNode = this.allNodes.get(toNodeOriginal.getId());
         toNode.setBox(fromNode.getBox());
@@ -72,7 +122,7 @@ public class Graph {
         return g;
     }
 
-    public boolean isInitialState() {
+    private boolean isInitialState() {
         return this.parent == null;
     }
 
@@ -87,9 +137,20 @@ public class Graph {
         return true;
     }
 
+    public boolean isSubGoalState(List<Node> goalNodes, List<Node> boxNodes){
+        for (Node goal : goalNodes) {
+            if (!boxNodes.contains(goal)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     public List<Graph> getExpandedStates() throws Exception {
+
         List<Graph> expandedStates = new ArrayList<>();
-        for (Node agentNode : this.getAgentNodes()) {
+
+        for (Node agentNode : this.getSpecificAgents()) {
             for (Edge edge : agentNode.getEdges()) {
                 Node newAgentNode = this.allNodes.get(edge.getDestination());
                 if (newAgentNode.canBeMovedTo()) {
@@ -263,5 +324,9 @@ public class Graph {
     @Override
     public int hashCode() {
         return Objects.hash(allNodes);
+    }
+
+    public void setPriority(Priority priority) {
+        this.priority = priority;
     }
 }

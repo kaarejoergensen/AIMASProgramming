@@ -1,5 +1,6 @@
 package searchclient;
 
+import com.sun.deploy.util.SessionState;
 import searchclient.Heuristic.AStar;
 import searchclient.Heuristic.Greedy;
 import searchclient.Heuristic.WeightedAStar;
@@ -196,9 +197,14 @@ public class SearchClient {
 
     public List<Graph> Search(Strategy strategy) throws Exception {
         System.err.format("Search starting with strategy %s.\n", strategy.toString());
+
+        this.initialState.setPriority(priorityList.poll());
+
+
         strategy.addToFrontier(this.initialState);
 
         int iterations = 0;
+
         while (true) {
             if (iterations == 1000) {
                 System.err.println(strategy.searchStatus());
@@ -211,13 +217,23 @@ public class SearchClient {
 
             Graph leafState = strategy.getAndRemoveLeaf();
 
-            if (leafState.isGoalState()) {
-                return leafState.extractPlan();
+            List<Node> tmp_goals = leafState.getPrioirtyGoalNodes();
+            List<Node> tmp_boxes = leafState.getPriorityBoxNodes();
+
+
+            if(tmp_boxes.isEmpty()||tmp_goals.isEmpty()){
+                System.err.println("One or more subgoals are empty. Shits not working brah");
             }
 
-            System.out.println(leafState.actionsToString());
-            System.out.println(leafState);
-            System.out.println(((StrategyBestFirst) strategy).h(leafState));
+
+            if (leafState.isSubGoalState(tmp_goals, tmp_boxes)) {
+                return leafState.extractPlan();
+
+            }
+
+//            System.out.println(leafState.actionsToString());
+            System.err.println(leafState);
+//            System.out.println(((StrategyBestFirst) strategy).h(leafState));
             try {
                 Thread.sleep(1500);
             } catch (InterruptedException e) {
@@ -275,3 +291,29 @@ public class SearchClient {
         System.err.println("Prio list bro: " + Arrays.asList(priorityList));
     }
 }
+
+
+//            for(Priority group : this.priorityList){
+//                System.err.println("Testing subgoal " + group.toString());
+//
+//                    List<Node> tmp_goals = leafState.getGoalNodes();
+//
+//                    tmp_goals = tmp_goals.stream().filter(n -> group.getLetters().contains(n.getGoal())).collect(Collectors.toList());
+//                    List<Node> tmp_boxes = leafState.getBoxNodes();
+//                    tmp_boxes = tmp_boxes.stream().filter(n -> group.getLetters().contains(n.getBox())).collect(Collectors.toList());
+//
+//
+//                    if(leafState.isSubGoalState(tmp_goals,tmp_boxes)){
+//                        strategy.addToFrontier(leafState);
+//                        return leafState.extractPlan();
+//                    }
+//
+//                strategy.addToExplored(leafState);
+//                for (Graph n : leafState.getExpandedStates()) { // The list of expanded States is shuffled randomly; see State.java.
+//                    if (!strategy.isExplored(n) && !strategy.inFrontier(n)) {
+//                        strategy.addToFrontier(n);
+//                    }
+//                }
+//                iterations++;
+//
+//            }

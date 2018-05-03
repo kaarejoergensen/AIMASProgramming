@@ -35,6 +35,8 @@ public abstract class Strategy {
 
     public abstract Graph getAndRemoveLeaf();
 
+    public abstract Graph getLeaf();
+
     public abstract void addToFrontier(Graph n);
 
     public abstract boolean inFrontier(Graph n);
@@ -61,6 +63,10 @@ public abstract class Strategy {
             Graph n = frontier.pollFirst();
             frontierSet.remove(n);
             return n;
+        }
+
+        public Graph getLeaf(){
+            return frontier.peek();
         }
 
         @Override
@@ -107,6 +113,11 @@ public abstract class Strategy {
             return n;
         }
 
+        public Graph getLeaf(){
+            return frontier.peek();
+        }
+
+
         @Override
         public void addToFrontier(Graph n) {
             frontier.add(n);
@@ -152,6 +163,10 @@ public abstract class Strategy {
             Graph n = frontier.poll();
             frontierSet.remove(n);
             return n;
+        }
+
+        public Graph getLeaf(){
+            return frontier.peek();
         }
 
         @Override
