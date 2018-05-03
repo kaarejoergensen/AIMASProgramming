@@ -14,8 +14,8 @@ import searchclient.model.Graph;
 import searchclient.model.Node;
 import searchclient.model.Priority;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
+import java.io.*;
+import java.nio.Buffer;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -165,8 +165,6 @@ public class SearchClient {
                 if (response.contains("false")) {
                     System.err.format("Server responsed with %s to the inapplicable action: %s\n", response, act);
                     System.err.format("%s was attempted in \n%s\n", act, n.toString());
-                    System.err.format("%s was attempted in \n%s\n", n.getParent().actionsToString(), n.getParent().toString());
-                    System.err.format("%s was attempted in \n%s\n", n.getParent().getParent().actionsToString(), n.getParent().getParent().toString());
                     break;
                 }
             }

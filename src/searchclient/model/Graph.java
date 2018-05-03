@@ -212,7 +212,7 @@ public class Graph {
                         Node newAgentNode1 = this.allNodes.get(newAgentNodeEdge);
                         if (canBeMovedTo(newAgentNode1)) {
                             Command command = new Command(Command.Type.Pull, getDir(agentNode, newAgentNode1),
-                                    getDir(newAgentNode, agentNode));
+                                    getDir(agentNode, newAgentNode));
                             Graph graph = this.childState();
                             graph.actions[Character.getNumericValue(this.agents.get(agentNode.getId()).getLetter())] = command;
                             graph.moveAgent(agentNode, newAgentNode1);
