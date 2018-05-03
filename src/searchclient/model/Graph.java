@@ -1,12 +1,10 @@
 package searchclient.model;
 
 import searchclient.Command;
-import searchclient.exceptions.NoPathFoundException;
 import searchclient.model.Elements.Agent;
 import searchclient.model.Elements.Box;
 import searchclient.model.Elements.Goal;
 
-import java.lang.reflect.Array;
 import java.util.*;
 
 public class Graph {
@@ -184,43 +182,60 @@ public class Graph {
             for (String edge : agentNode.getEdges()) {
                 Node newAgentNode = this.allNodes.get(edge);
                 if (canBeMovedTo(newAgentNode)) {
-                    Command command = new Command(getDir(agentNode, newAgentNode));
-                    Graph graph = this.childState();
-                    graph.actions[Character.getNumericValue(this.agents.get(agentNode.getId()).getLetter())] = command;
-                    graph.moveAgent(agentNode, newAgentNode);
-                    expandedStates.add(graph);
-                } else if (this.boxes.get(newAgentNode.getId()) != null &&
-                        this.boxes.get(newAgentNode.getId()).getColor().equals(this.agents.get(agentNode.getId()).getColor())) {
+                    expandedStates.add(this.newMoveAgentGraph(agentNode, newAgentNode));
+                } else if (boxCanBeMoved(agentNode, newAgentNode)) {
                     for (String newAgentNodeEdge : newAgentNode.getEdges()) {
                         Node newBoxNode = this.allNodes.get(newAgentNodeEdge);
                         if (canBeMovedTo(newBoxNode)) {
-                            Command command = new Command(Command.Type.Push, getDir(agentNode, newAgentNode),
-                                    getDir(newAgentNode, newBoxNode));
-                            if (!Command.isOpposite(command.dir1, command.dir2)) {
-                                Graph graph = this.childState();
-                                graph.actions[Character.getNumericValue(this.agents.get(agentNode.getId()).getLetter())] = command;
-                                graph.moveAgent(agentNode, newAgentNode);
-                                graph.moveBox(newAgentNode, newBoxNode);
-                                expandedStates.add(graph);
-                            }
+                            newPushBoxGraph(agentNode, newAgentNode, newBoxNode).map(expandedStates::add);
                         }
                     }
                     for (String newAgentNodeEdge : agentNode.getEdges()) {
                         Node newAgentNode1 = this.allNodes.get(newAgentNodeEdge);
                         if (canBeMovedTo(newAgentNode1)) {
-                            Command command = new Command(Command.Type.Pull, getDir(agentNode, newAgentNode1),
-                                    getDir(agentNode, newAgentNode));
-                            Graph graph = this.childState();
-                            graph.actions[Character.getNumericValue(this.agents.get(agentNode.getId()).getLetter())] = command;
-                            graph.moveAgent(agentNode, newAgentNode1);
-                            graph.moveBox(newAgentNode, agentNode);
-                            expandedStates.add(graph);
+                            expandedStates.add(newPullBoxGraph(agentNode, newAgentNode1));
                         }
                     }
                 }
             }
         }
         return expandedStates;
+    }
+
+    private Graph newMoveAgentGraph(Node oldAgentNode, Node newAgentNode) {
+        Command command = new Command(getDir(oldAgentNode, newAgentNode));
+        Graph graph = this.childState();
+        graph.actions[Character.getNumericValue(this.agents.get(oldAgentNode.getId()).getLetter())] = command;
+        graph.moveAgent(oldAgentNode, newAgentNode);
+        return graph;
+    }
+
+    private Optional<Graph> newPushBoxGraph(Node oldAgentNode, Node newAgentNode, Node newBoxNode) {
+        Command command = new Command(Command.Type.Push, getDir(oldAgentNode, newAgentNode),
+                getDir(newAgentNode, newBoxNode));
+        if (!Command.isOpposite(command.dir1, command.dir2)) {
+            Graph graph = this.childState();
+            graph.actions[Character.getNumericValue(this.agents.get(oldAgentNode.getId()).getLetter())] = command;
+            graph.moveAgent(oldAgentNode, newAgentNode);
+            graph.moveBox(newAgentNode, newBoxNode);
+            return Optional.of(graph);
+        }
+        return Optional.empty();
+    }
+
+    private Graph newPullBoxGraph(Node oldAgentNode, Node newAgentNode) {
+        Command command = new Command(Command.Type.Pull, getDir(oldAgentNode, newAgentNode),
+                getDir(oldAgentNode, newAgentNode));
+        Graph graph = this.childState();
+        graph.actions[Character.getNumericValue(this.agents.get(oldAgentNode.getId()).getLetter())] = command;
+        graph.moveAgent(oldAgentNode, newAgentNode);
+        graph.moveBox(newAgentNode, oldAgentNode);
+        return graph;
+    }
+
+    private boolean boxCanBeMoved(Node oldAgentNode, Node newAgentNode) {
+        return this.boxes.get(newAgentNode.getId()) != null &&
+                this.boxes.get(newAgentNode.getId()).getColor().equals(this.agents.get(oldAgentNode.getId()).getColor());
     }
 
     public boolean canBeMovedTo(Node node, Agent ignoreAgent) {

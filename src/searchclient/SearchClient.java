@@ -106,9 +106,6 @@ public class SearchClient {
     public static void main(String[] args) throws Exception {
         BufferedReader serverMessages = new BufferedReader(new InputStreamReader(System.in));
 
-        // Use stderr to print to console
-        System.err.println("SearchClient initializing. I am sending this using the error output stream.");
-
         // Read level and create the initial state of the problem
         SearchClient client = new SearchClient(serverMessages);
 
@@ -132,12 +129,12 @@ public class SearchClient {
                     strategy = new StrategyBestFirst(new Greedy(null));  //#TODO: Real goal
                     break;
                 default:
-                    strategy = new StrategyBFS();
-                    System.err.println("Defaulting to BFS search. Use arguments -bfs, -dfs, -astar, -wastar, or -greedy to set the search strategy.");
+                    strategy = new StrategyBestFirst(new AStar(null));
+                    System.err.println("Defaulting to astar search. Use arguments -bfs, -dfs, -astar, -wastar, or -greedy to set the search strategy.");
             }
         } else {
-            strategy = new StrategyBestFirst(new Greedy(null));  //#TODO: Real goal
-            System.err.println("Defaulting to greedy search. Use arguments -bfs, -dfs, -astar, -wastar, or -greedy to set the search strategy.");
+            strategy = new StrategyBestFirst(new AStar(null));  //#TODO: Real goal
+            System.err.println("Defaulting to astar search. Use arguments -bfs, -dfs, -astar, -wastar, or -greedy to set the search strategy.");
         }
 
         List<Graph> solution;
@@ -203,7 +200,7 @@ public class SearchClient {
                 System.err.println(leafState.actionsToString());
                 System.err.println(leafState);
                 System.err.println(((StrategyBestFirst)strategy).h(leafState));
-                Thread.sleep(1000);
+                Thread.sleep(2500);
 
                 strategy.addToExplored(leafState);
                 for (Graph n : leafState.getExpandedStates()) {
@@ -255,9 +252,6 @@ public class SearchClient {
             }
         }
         priorityList.addAll(priorities);
-
-        //Test
-        System.err.println("Prio list bro: " + Arrays.asList(priorityList));
     }
 }
 
