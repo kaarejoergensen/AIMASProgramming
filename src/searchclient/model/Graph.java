@@ -183,7 +183,7 @@ public class Graph {
 
     public List<Graph> getExpandedStates() throws Exception {
         List<Graph> expandedStates = new ArrayList<>();
-        for (Node agentNode : this.getSpecificAgents()) {
+        for (Node agentNode : this.getAgentNodes()) {
             for (String edge : agentNode.getEdges()) {
                 Node newAgentNode = this.allNodes.get(edge);
                 if (canBeMovedTo(newAgentNode)) {
