@@ -3,6 +3,8 @@ package searchclient.model;
 import searchclient.Command;
 import searchclient.exceptions.NoPathFoundException;
 import searchclient.model.Elements.Agent;
+import searchclient.model.Elements.Box;
+import searchclient.model.Elements.Goal;
 
 import java.lang.reflect.Array;
 import java.util.*;
@@ -56,7 +58,7 @@ public class Graph {
     public List<Node> getPrioirtyGoalNodes(){
         List<Node> tmp_goals = new ArrayList<>();
         for(Node n : this.getGoalNodes()){
-            Character x = n.getGoal().getLetter();
+            Character x = getGoal(n).getLetter();
             for(Character t : priority.getLetters()){
                 if(Character.toLowerCase(x) == Character.toLowerCase(t)){
                     tmp_goals.add(n);
@@ -69,7 +71,7 @@ public class Graph {
     public List<Node> getPriorityBoxNodes(){
         List<Node> tmp_boxes = new ArrayList<>();
         for(Node n : this.getBoxNodes()){
-            Character x = n.getBox().getLetter();
+            Character x = getBox(n).getLetter();
             for(Character t : priority.getLetters()){
                 if(Character.toLowerCase(x) == Character.toLowerCase(t)){
                     tmp_boxes.add(n);
@@ -84,7 +86,7 @@ public class Graph {
         List<Node> relevantBoxes = getPriorityBoxNodes();
         for(Node b : relevantBoxes){
             for(Node a : getAgentNodes()){
-                if(a.getAgent().getColor().equals(b.getBox().getColor())){
+                if(getAgent(a).getColor().equals(getBox(b).getColor())){
                     tmp_agents.add(a);
                 }
             }

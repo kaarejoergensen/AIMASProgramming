@@ -176,16 +176,15 @@ public class SearchClient {
     public List<Graph> Search(Strategy strategy) throws Exception {
         System.err.format("Search starting with strategy %s.\n", strategy.toString());
 
-        List<Graph> full_plan =  new LinkedList<>();
+        List<Graph> full_plan = new LinkedList<>();
         full_plan.add(initialState);
 
         int iterations = 0;
-        while(!priorityList.isEmpty()){
+        while (!priorityList.isEmpty()) {
             Priority p = priorityList.poll();
 
-            full_plan.get(full_plan.size()-1).setPriority(p);
-            strategy.addToFrontier(full_plan.get(full_plan.size()-1));
-
+            full_plan.get(full_plan.size() - 1).setPriority(p);
+            strategy.addToFrontier(full_plan.get(full_plan.size() - 1));
 
             while (true) {
                 if (iterations == 1000) {
@@ -203,14 +202,16 @@ public class SearchClient {
                 List<Node> tmp_boxes = leafState.getPriorityBoxNodes();
 
 
+                if (leafState.isSubGoalState(tmp_goals, tmp_boxes)) {
+                    if (priorityList.isEmpty()) return leafState.extractPlan();
+                    full_plan.addAll(leafState.extractPlan());
+                    break;
+                }
+
 //            System.out.println(leafState.actionsToString());
-//            System.out.println(leafState);
+                //System.err.println(leafState);
 //            System.out.println(((StrategyBestFirst) strategy).h(leafState));
-//            try {
-//                Thread.sleep(1500);
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
+
 
                 strategy.addToExplored(leafState);
                 for (Graph n : leafState.getExpandedStates()) { // The list of expanded States is shuffled randomly; see State.java.
@@ -223,7 +224,7 @@ public class SearchClient {
             strategy.clearFrontier();
         }
 
-        return  full_plan;
+        return full_plan;
 
     }
 
