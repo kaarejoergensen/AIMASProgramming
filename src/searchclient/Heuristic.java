@@ -18,7 +18,6 @@ public abstract class Heuristic implements Comparator<Graph> {
     }
 
     public int h(Graph graph) {
-        
         if (graph.getH() != -1) {
             return graph.getH();
         }
@@ -29,8 +28,8 @@ public abstract class Heuristic implements Comparator<Graph> {
                     filter(n -> graph.getBox(n) != null && graph.getBox(n).getColor().equals(graph.getAgent(agentNode).getColor())).
                     collect(Collectors.toList());
             for (Node boxNode : boxNodesWithSameColor) {
-                result += 3 * graph.shortestPath(agentNode, boxNode, false).
-                        orElse(new ArrayList<>(10000)).size();
+                result += graph.shortestPath(agentNode, boxNode, false).
+                        orElse(new ArrayList<>(10)).size();
             }
         }
         for (Node boxNode : graph.getPriorityBoxNodes()) {
@@ -39,8 +38,8 @@ public abstract class Heuristic implements Comparator<Graph> {
                     collect(Collectors.toList());
             for (Node goalNode : goalNodesWithSameLetter) {
                 if (!goalNode.equals(boxNode)) {
-                    result += 10 * (graph.shortestPath(boxNode, goalNode, false).
-                            orElse(new ArrayList<>(10000)).size() + 1);
+                    result += 2 * (graph.shortestPath(boxNode, goalNode, false).
+                            orElse(new ArrayList<>(10)).size() + 1);
                 }
             }
         }
