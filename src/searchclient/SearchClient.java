@@ -198,56 +198,57 @@ public class SearchClient {
     public List<Graph> Search(Strategy strategy) throws Exception {
         System.err.format("Search starting with strategy %s.\n", strategy.toString());
 
-        this.initialState.setPriority(priorityList.poll());
-
-
-        strategy.addToFrontier(this.initialState);
+        List<Graph> full_plan =  new LinkedList<>();
+        full_plan.add(initialState);
 
         int iterations = 0;
+        while(!priorityList.isEmpty()){
+            Priority p = priorityList.poll();
 
-        while (true) {
-            if (iterations == 1000) {
-                System.err.println(strategy.searchStatus());
-                iterations = 0;
-            }
-
-            if (strategy.frontierIsEmpty()) {
-                return null;
-            }
-
-            Graph leafState = strategy.getAndRemoveLeaf();
-
-            List<Node> tmp_goals = leafState.getPrioirtyGoalNodes();
-            List<Node> tmp_boxes = leafState.getPriorityBoxNodes();
+            full_plan.get(full_plan.size()-1).setPriority(p);
+            strategy.addToFrontier(full_plan.get(full_plan.size()-1));
 
 
-            if(tmp_boxes.isEmpty()||tmp_goals.isEmpty()){
-                System.err.println("One or more subgoals are empty. Shits not working brah");
-            }
+            while (true) {
+                if (iterations == 1000) {
+                    System.err.println(strategy.searchStatus());
+                    iterations = 0;
+                }
+
+                if (strategy.frontierIsEmpty()) {
+                    return null;
+                }
+
+                Graph leafState = strategy.getAndRemoveLeaf();
+
+                List<Node> tmp_goals = leafState.getPrioirtyGoalNodes();
+                List<Node> tmp_boxes = leafState.getPriorityBoxNodes();
 
 
-            if (leafState.isSubGoalState(tmp_goals, tmp_boxes)) {
-                return leafState.extractPlan();
-
-            }
+                if (leafState.isSubGoalState(tmp_goals, tmp_boxes)) {
+                    if(priorityList.isEmpty()) return leafState.extractPlan();
+                    full_plan.addAll(leafState.extractPlan());
+                    break;
+                }
 
 //            System.out.println(leafState.actionsToString());
-            System.err.println(leafState);
+                //System.err.println(leafState);
 //            System.out.println(((StrategyBestFirst) strategy).h(leafState));
-            try {
-                Thread.sleep(1500);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
 
-            strategy.addToExplored(leafState);
-            for (Graph n : leafState.getExpandedStates()) { // The list of expanded States is shuffled randomly; see State.java.
-                if (!strategy.isExplored(n) && !strategy.inFrontier(n)) {
-                    strategy.addToFrontier(n);
+
+                strategy.addToExplored(leafState);
+                for (Graph n : leafState.getExpandedStates()) { // The list of expanded States is shuffled randomly; see State.java.
+                    if (!strategy.isExplored(n) && !strategy.inFrontier(n)) {
+                        strategy.addToFrontier(n);
+                    }
                 }
+                iterations++;
             }
-            iterations++;
+            strategy.clearFrontier();
         }
+
+        return  full_plan;
+
     }
 
     public void generatePriorityList(Graph graph) {
