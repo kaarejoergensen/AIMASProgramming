@@ -1,7 +1,6 @@
 package searchclient.model;
 
 import searchclient.Command;
-import searchclient.exceptions.NoPathFoundException;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -167,9 +166,9 @@ public class Graph {
         return new Graph(this, this.rows, this.columns, allClone);
     }
 
-    public List<Node> shortestPath(Node fromNode, Node toNode) throws NoPathFoundException {
+    public Optional<List<Node>> shortestPath(Node fromNode, Node toNode, boolean ignoreObstaclesOnPath) {
         if (fromNode == null || toNode == null || fromNode.equals(toNode)) {
-            return new ArrayList<>();
+            return Optional.of(new ArrayList<>());
         }
         List<String> visitedNodes = new ArrayList<>();
         Queue<Node> queue = new LinkedList<>();
@@ -187,10 +186,10 @@ public class Graph {
                 if (destinationNode.equals(toNode)) {
                     List<Node> finalList = predecessors.get(n.getId());
                     finalList.add(toNode);
-                    return finalList;
+                    return Optional.of(finalList);
                 }
                 if (!visitedNodes.contains(edge.getDestination()) &&
-                        destinationNode.canBeMovedTo()) {
+                        (destinationNode.canBeMovedTo() || ignoreObstaclesOnPath)) {
                     queue.add(destinationNode);
                     visitedNodes.add(edge.getDestination());
                     List<Node> predecessorList = new ArrayList<>();
@@ -202,7 +201,7 @@ public class Graph {
                 }
             }
         }
-        throw new NoPathFoundException();
+        return Optional.empty();
     }
 
     private boolean isNeighbours(Node fromNode, Node toNode) {

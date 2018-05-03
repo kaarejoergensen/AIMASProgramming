@@ -6,7 +6,6 @@ import searchclient.Heuristic.WeightedAStar;
 import searchclient.Strategy.StrategyBFS;
 import searchclient.Strategy.StrategyBestFirst;
 import searchclient.Strategy.StrategyDFS;
-import searchclient.exceptions.NoPathFoundException;
 import searchclient.model.Edge;
 import searchclient.model.Elements.Agent;
 import searchclient.model.Elements.Box;
@@ -215,14 +214,14 @@ public class SearchClient {
                 return leafState.extractPlan();
             }
 
-            System.out.println(leafState.actionsToString());
-            System.out.println(leafState);
-            System.out.println(((StrategyBestFirst) strategy).h(leafState));
-            try {
-                Thread.sleep(1500);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+//            System.out.println(leafState.actionsToString());
+//            System.out.println(leafState);
+//            System.out.println(((StrategyBestFirst) strategy).h(leafState));
+//            try {
+//                Thread.sleep(1500);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
 
             strategy.addToExplored(leafState);
             for (Graph n : leafState.getExpandedStates()) { // The list of expanded States is shuffled randomly; see State.java.
@@ -243,12 +242,9 @@ public class SearchClient {
             //Finds all the goals between g and corresponding boxes
             for (Node b : graph.getBoxNodes()) {
                 if (Character.toLowerCase(b.getBox().getLetter()) == g.getGoal().getLetter()) {
-                    List<Node> path;
-                    try {
-                        path = graph.shortestPath(b, g);
-                    } catch (NoPathFoundException e) {
-                        path = new ArrayList<>();
-                    }
+                    List<Node> path = graph.shortestPath(b, g, false).
+                            orElse(graph.shortestPath(b, g, true)
+                                    .orElse(new ArrayList<>()));
                     //Counts the amount of goals on the way
                     for (Node pathNode : path) {
                         if (pathNode.getGoal() != null) {
