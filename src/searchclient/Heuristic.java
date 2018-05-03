@@ -18,6 +18,9 @@ public abstract class Heuristic implements Comparator<Graph> {
     }
 
     public int h(Graph graph) {
+        if (graph.getH() != -1) {
+            return graph.getH();
+        }
         int result = 0;
 
         for (Node agentNode : graph.getAgentNodes()) {
@@ -45,7 +48,7 @@ public abstract class Heuristic implements Comparator<Graph> {
         if (groupDone) {
 
         }
-
+        graph.setH(result);
         return result;
     }
 

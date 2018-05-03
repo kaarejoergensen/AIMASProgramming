@@ -11,14 +11,16 @@ import java.util.List;
 import java.util.Objects;
 
 public class Node {
+    private String ID;
     private Integer x;
     private Integer y;
     private ColeredElement agent;
     private ColeredElement box;
     private ColeredElement goal;
-    private List<Edge> edges;
+    private List<String> edges;
 
-    public Node(int x, int y, ColeredElement element) {
+    public Node(String ID, int x, int y, ColeredElement element) {
+        this.ID = ID;
         this.x = x;
         this.y = y;
         this.edges = new ArrayList<>();
@@ -31,26 +33,27 @@ public class Node {
         }
     }
 
-    public Node(int x, int y) {
+    public Node(String ID, int x, int y) {
+        this.ID = ID;
         this.x = x;
         this.y = y;
         this.edges = new ArrayList<>();
     }
 
     public String getId() {
-        return String.valueOf(x) + ',' + String.valueOf(y);
+        return ID;
     }
 
-    public List<Edge> getEdges() {
+    public List<String> getEdges() {
         return Collections.unmodifiableList(edges);
     }
 
-    public void addEdge(Edge edge) {
-        this.edges.add(edge);
+    public void setEdges(List<String> edges) {
+        this.edges = edges;
     }
 
-    public void setEdges(List<Edge> edges) {
-        this.edges = edges;
+    public void addEdge(String edge) {
+        this.edges.add(edge);
     }
 
     public Integer getX() {
@@ -91,7 +94,7 @@ public class Node {
 
     @Override
     public Node clone() {
-        Node node = new Node(this.x, this.y);
+        Node node = new Node(ID, this.x, this.y);
 
         node.agent = this.agent == null ? null : new Agent(this.agent.getLetter(), this.agent.getColor());
         node.box = this.box == null ? null : new Box(this.box.getLetter(), this.box.getColor());
@@ -107,7 +110,8 @@ public class Node {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Node node = (Node) o;
-        return Objects.equals(x, node.x) &&
+        return Objects.equals(ID, node.ID) &&
+                Objects.equals(x, node.x) &&
                 Objects.equals(y, node.y) &&
                 Objects.equals(agent, node.agent) &&
                 Objects.equals(box, node.box) &&
@@ -117,7 +121,6 @@ public class Node {
 
     @Override
     public int hashCode() {
-
-        return Objects.hash(x, y, agent, box, goal, edges);
+        return Objects.hash(ID, x, y, agent, box, goal, edges);
     }
 }

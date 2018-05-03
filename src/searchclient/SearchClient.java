@@ -6,7 +6,6 @@ import searchclient.Heuristic.WeightedAStar;
 import searchclient.Strategy.StrategyBFS;
 import searchclient.Strategy.StrategyBestFirst;
 import searchclient.Strategy.StrategyDFS;
-import searchclient.model.Edge;
 import searchclient.model.Elements.Agent;
 import searchclient.model.Elements.Box;
 import searchclient.model.Elements.Goal;
@@ -87,32 +86,34 @@ public class SearchClient {
 
         Node[][] tiles = new Node[rows][columns];
 
+        int count = 0;
         for (String string : strings) {
             for (int col = 0; col < string.length(); col++) {
                 char chr = string.charAt(col);
                 if (chr != '+') {
                     Node node = null;
                     if ('0' <= chr && chr <= '9') {
-                        node = new Node(col, row, new Agent(chr, colorMap.get(chr)));
+                        node = new Node(String.valueOf(count), col, row, new Agent(chr, colorMap.get(chr)));
                     } else if ('A' <= chr && chr <= 'Z') {
-                        node = new Node(col, row, new Box(chr, colorMap.get(chr)));
+                        node = new Node(String.valueOf(count), col, row, new Box(chr, colorMap.get(chr)));
                     } else if ('a' <= chr && chr <= 'z') {
-                        node = new Node(col, row, new Goal(chr));
+                        node = new Node(String.valueOf(count), col, row, new Goal(chr));
                     } else if (chr == ' ') {
-                        node = new Node(col, row);
+                        node = new Node(String.valueOf(count), col, row);
                     } else {
                         System.err.println("Error, read invalid level character: " + (int) chr);
                         System.exit(1);
                     }
                     tiles[row][col] = node;
                     if (tiles[row - 1][col] != null) {
-                        node.addEdge(new Edge(node.getId(), tiles[row - 1][col].getId()));
-                        tiles[row - 1][col].addEdge(new Edge(tiles[row - 1][col].getId(), node.getId()));
+                        node.addEdge(tiles[row - 1][col].getId());
+                        tiles[row - 1][col].addEdge(node.getId());
                     }
                     if (tiles[row][col - 1] != null) {
-                        node.addEdge(new Edge(node.getId(), tiles[row][col - 1].getId()));
-                        tiles[row][col - 1].addEdge(new Edge(tiles[row][col - 1].getId(), node.getId()));
+                        node.addEdge(tiles[row][col - 1].getId());
+                        tiles[row][col - 1].addEdge(node.getId());
                     }
+                    count++;
                 }
             }
             row++;
@@ -177,7 +178,7 @@ public class SearchClient {
             System.err.println("\nSummary for " + strategy.toString());
             System.err.println("Found solution of length " + solution.size());
             System.err.println(strategy.searchStatus());
-
+            System.exit(0);
             for (Graph n : solution) {
                 String act = n.actionsToString();
                 System.out.println(act);
