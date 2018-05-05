@@ -13,7 +13,8 @@ import searchclient.model.Graph;
 import searchclient.model.Node;
 import searchclient.model.Priority;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -24,7 +25,7 @@ public class SearchClient {
     private Graph initialState;
     private PriorityQueue<Priority> priorityList = new PriorityQueue<>((o1, o2) -> o2.getPriority() - o1.getPriority());
 
-    public SearchClient(BufferedReader serverMessages) throws Exception {
+    private SearchClient(BufferedReader serverMessages) throws Exception {
         int row = 0;
         int columns = 0;
         int rows = 0;
@@ -119,21 +120,20 @@ public class SearchClient {
                     strategy = new StrategyDFS();
                     break;
                 case "-astar":
-                    strategy = new StrategyBestFirst(new AStar(null)); //#TODO: Real goal
+                    strategy = new StrategyBestFirst(new AStar());
                     break;
                 case "-wastar":
-                    // You're welcome to test WA* out with different values, but for the report you must at least indicate benchmarks for W = 5.
-                    strategy = new StrategyBestFirst(new WeightedAStar(null, 5));  //#TODO: Real goal
+                    strategy = new StrategyBestFirst(new WeightedAStar(5));
                     break;
                 case "-greedy":
-                    strategy = new StrategyBestFirst(new Greedy(null));  //#TODO: Real goal
+                    strategy = new StrategyBestFirst(new Greedy());
                     break;
                 default:
-                    strategy = new StrategyBestFirst(new AStar(null));
+                    strategy = new StrategyBestFirst(new AStar());
                     System.err.println("Defaulting to astar search. Use arguments -bfs, -dfs, -astar, -wastar, or -greedy to set the search strategy.");
             }
         } else {
-            strategy = new StrategyBestFirst(new AStar(null));  //#TODO: Real goal
+            strategy = new StrategyBestFirst(new AStar());
             System.err.println("Defaulting to astar search. Use arguments -bfs, -dfs, -astar, -wastar, or -greedy to set the search strategy.");
         }
 
@@ -166,7 +166,7 @@ public class SearchClient {
         }
     }
 
-    public List<Graph> Search(Strategy strategy) throws Exception {
+    private List<Graph> Search(Strategy strategy) throws Exception {
         System.err.format("Search starting with strategy %s.\n", strategy.toString());
 
         List<Graph> fullPlan = new LinkedList<>();
@@ -218,7 +218,7 @@ public class SearchClient {
 
     }
 
-    public void generatePriorityList(Graph graph) {
+    private void generatePriorityList(Graph graph) {
         //Går utfra at det kun er 1 boks pr mål, og kun 1 mål pr char
         Map<Character, Integer> priorityMap = new HashMap<>();
         for (Node goalNode : graph.getGoalNodes()) {
@@ -254,29 +254,3 @@ public class SearchClient {
         priorityList.addAll(priorities);
     }
 }
-
-
-//            for(Priority group : this.priorityList){
-//                System.err.println("Testing subgoal " + group.toString());
-//
-//                    List<Node> tmp_goals = leafState.getGoalNodes();
-//
-//                    tmp_goals = tmp_goals.stream().filter(n -> group.getLetters().contains(n.getGoal())).collect(Collectors.toList());
-//                    List<Node> tmp_boxes = leafState.getBoxNodes();
-//                    tmp_boxes = tmp_boxes.stream().filter(n -> group.getLetters().contains(n.getBox())).collect(Collectors.toList());
-//
-//
-//                    if(leafState.isSubGoalState(tmp_goals,tmp_boxes)){
-//                        strategy.addToFrontier(leafState);
-//                        return leafState.extractPlan();
-//                    }
-//
-//                strategy.addToExplored(leafState);
-//                for (Graph n : leafState.getExpandedStates()) { // The list of expanded States is shuffled randomly; see State.java.
-//                    if (!strategy.isExplored(n) && !strategy.inFrontier(n)) {
-//                        strategy.addToFrontier(n);
-//                    }
-//                }
-//                iterations++;
-//
-//            }
