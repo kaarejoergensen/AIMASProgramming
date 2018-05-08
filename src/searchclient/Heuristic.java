@@ -15,6 +15,7 @@ public abstract class Heuristic implements Comparator<Graph> {
     }
 
     public int h(Graph graph) {
+
         if (graph.getH() != -1) {
             return graph.getH();
         }
