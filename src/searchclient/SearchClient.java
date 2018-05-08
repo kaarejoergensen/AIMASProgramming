@@ -182,6 +182,8 @@ public class SearchClient {
             full_plan.get(full_plan.size() - 1).setPriority(p);
             strategy.addToFrontier(full_plan.get(full_plan.size() - 1));
 
+
+
             while (true) {
                 if (iterations == 1000) {
                     System.err.println(strategy.searchStatus());
@@ -200,10 +202,10 @@ public class SearchClient {
                     break;
                 }
 
-                System.err.println(leafState.actionsToString());
-                System.err.println(leafState);
-                System.err.println(((StrategyBestFirst)strategy).h(leafState));
-                Thread.sleep(1000);
+                /*System.err.println(leafState.actionsToString());
+                System.err.println(((StrategyBestFirst)strategy).h(leafState));*/
+                //System.err.println(leafState);
+                //Thread.sleep(1000);
 
                 strategy.addToExplored(leafState);
                 for (Graph n : leafState.getExpandedStates()) { // The list of expanded States is shuffled randomly; see State.java.
@@ -258,30 +260,33 @@ public class SearchClient {
         //Test
         System.err.println("Prio list bro: " + Arrays.asList(priorityList));
     }
+
+    public boolean getHelpFromAHomie(Graph state, List<Node> relevantAgents, List<Node> relevantBoxes, List<Node> relevantGoals){
+        for(Node a : relevantAgents){
+            for(Node b : relevantBoxes){
+                Optional<List<Node>> path = state.shortestPath(a,b,false);
+                if(path.isPresent()){
+                    if(path.get().isEmpty()){
+                        return false;
+                    }
+                }else{
+                    return false;
+                }
+            }
+        }
+        for(Node b : relevantBoxes){
+            for(Node g : relevantGoals){
+                Optional<List<Node>> path = state.shortestPath(b,g,false);
+                if(path.isPresent()){
+                    if(path.get().isEmpty()){
+                        return false;
+                    }
+                }else{
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
 }
 
-
-//            for(Priority group : this.priorityList){
-//                System.err.println("Testing subgoal " + group.toString());
-//
-//                    List<Node> tmp_goals = leafState.getGoalNodes();
-//
-//                    tmp_goals = tmp_goals.stream().filter(n -> group.getLetters().contains(n.getGoal())).collect(Collectors.toList());
-//                    List<Node> tmp_boxes = leafState.getBoxNodes();
-//                    tmp_boxes = tmp_boxes.stream().filter(n -> group.getLetters().contains(n.getBox())).collect(Collectors.toList());
-//
-//
-//                    if(leafState.isSubGoalState(tmp_goals,tmp_boxes)){
-//                        strategy.addToFrontier(leafState);
-//                        return leafState.extractPlan();
-//                    }
-//
-//                strategy.addToExplored(leafState);
-//                for (Graph n : leafState.getExpandedStates()) { // The list of expanded States is shuffled randomly; see State.java.
-//                    if (!strategy.isExplored(n) && !strategy.inFrontier(n)) {
-//                        strategy.addToFrontier(n);
-//                    }
-//                }
-//                iterations++;
-//
-//            }

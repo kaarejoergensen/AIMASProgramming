@@ -5,6 +5,7 @@ import searchclient.model.Graph;
 import searchclient.model.Node;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -24,21 +25,18 @@ public abstract class Heuristic implements Comparator<Graph> {
         int result = 0;
 
         for (Node agentNode : graph.getSpecificAgents()) {
-            List<Node> boxNodesWithSameColor = graph.getPriorityBoxNodes().stream().
-                    filter(n -> graph.getBox(n) != null && graph.getBox(n).getColor().equals(graph.getAgent(agentNode).getColor())).
-                    collect(Collectors.toList());
+            List<Node> boxNodesWithSameColor = graph.getPriorityBoxNodes();
+
             for (Node boxNode : boxNodesWithSameColor) {
-                result += graph.shortestPath(agentNode, boxNode, false).
+                result += graph.shortestPath(agentNode, boxNode, true).
                         orElse(new ArrayList<>(10)).size();
             }
         }
         for (Node boxNode : graph.getPriorityBoxNodes()) {
-            List<Node> goalNodesWithSameLetter = graph.getPriorityGoalNodes().stream().
-                    filter(n -> graph.getGoal(n).hasSameLetter(graph.getBox(boxNode))).
-                    collect(Collectors.toList());
+            List<Node> goalNodesWithSameLetter = graph.getPriorityGoalNodes();
             for (Node goalNode : goalNodesWithSameLetter) {
                 if (!goalNode.equals(boxNode)) {
-                    result += 2 * (graph.shortestPath(boxNode, goalNode, false).
+                    result += 2 * (graph.shortestPath(boxNode, goalNode, true).
                             orElse(new ArrayList<>(10)).size() + 1);
                 }
             }

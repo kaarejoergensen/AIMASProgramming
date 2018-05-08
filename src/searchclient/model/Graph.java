@@ -81,6 +81,9 @@ public class Graph {
         return tmp_boxes;
     }
 
+    //filter(n -> graph.getBox(n) != null && graph.getBox(n).getColor().equals(graph.getAgent(agentNode).getColor())).
+    //                    collect(Collectors.toList());
+
     public List<Node> getSpecificAgents(){
         List<Node> tmp_agents = new ArrayList<>();
         List<Node> relevantBoxes = getPriorityBoxNodes();
