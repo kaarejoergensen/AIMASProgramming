@@ -1,6 +1,5 @@
 package searchclient;
 
-import searchclient.model.Elements.Goal;
 import searchclient.model.Graph;
 import searchclient.model.Node;
 
@@ -12,10 +11,7 @@ import java.util.stream.Collectors;
 
 public abstract class Heuristic implements Comparator<Graph> {
 
-    private Goal currentGoal;
-
-    public Heuristic(Goal currentGoal) {
-        this.currentGoal = currentGoal;
+    public Heuristic() {
     }
 
     public int h(Graph graph) {
@@ -26,9 +22,8 @@ public abstract class Heuristic implements Comparator<Graph> {
 
         for (Node agentNode : graph.getSpecificAgents()) {
             List<Node> boxNodesWithSameColor = graph.getPriorityBoxNodes();
-
             for (Node boxNode : boxNodesWithSameColor) {
-                result += graph.shortestPath(agentNode, boxNode, true).
+                result += graph.shortestPath(agentNode, boxNode, true,null).
                         orElse(new ArrayList<>(10)).size();
             }
         }
@@ -36,7 +31,7 @@ public abstract class Heuristic implements Comparator<Graph> {
             List<Node> goalNodesWithSameLetter = graph.getPriorityGoalNodes();
             for (Node goalNode : goalNodesWithSameLetter) {
                 if (!goalNode.equals(boxNode)) {
-                    result += 2 * (graph.shortestPath(boxNode, goalNode, true).
+                    result += 2 * (graph.shortestPath(boxNode, goalNode, true,null).
                             orElse(new ArrayList<>(10)).size() + 1);
                 }
             }
@@ -54,8 +49,8 @@ public abstract class Heuristic implements Comparator<Graph> {
 
     public static class AStar extends Heuristic {
 
-        public AStar(Goal currentGoal) {
-            super(currentGoal);
+        public AStar() {
+            super();
         }
 
         @Override
@@ -72,8 +67,8 @@ public abstract class Heuristic implements Comparator<Graph> {
     public static class WeightedAStar extends Heuristic {
         private int W;
 
-        public WeightedAStar(Goal currentGoal, int W) {
-            super(currentGoal);
+        public WeightedAStar(int W) {
+            super();
             this.W = W;
         }
 
@@ -90,8 +85,8 @@ public abstract class Heuristic implements Comparator<Graph> {
 
     public static class Greedy extends Heuristic {
 
-        public Greedy(Goal currentGoal) {
-            super(currentGoal);
+        public Greedy() {
+            super();
         }
 
         @Override
