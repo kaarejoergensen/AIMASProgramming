@@ -6,7 +6,6 @@ import searchclient.model.Elements.Box;
 import searchclient.model.Elements.Goal;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class Graph {
     private Graph parent;
@@ -21,9 +20,7 @@ public class Graph {
     private Priority priority;
     private int h;
 
-    public List<Node> priorityBoxes;
-    public List<Node> priorityGoals;
-    private List<Node> priorityAgents;
+    private int _hash = 0;
 
     public Graph(Graph parent, int rows, int columns, Map<String, Node> nodes,
                  Map<String, Agent> agents, Map<String, Box> boxes, Map<String, Goal> goals) {
@@ -204,7 +201,7 @@ public class Graph {
                     for (String newAgentNodeEdge : agentNode.getEdges()) {
                         Node newAgentNode1 = this.allNodes.get(newAgentNodeEdge);
                         if (canBeMovedTo(newAgentNode1)) {
-                            expandedStates.add(newPullBoxGraph(agentNode, newAgentNode1));
+                            expandedStates.add(newPullBoxGraph(newAgentNode, agentNode, newAgentNode1));
                         }
                     }
                 }
@@ -234,13 +231,16 @@ public class Graph {
         return Optional.empty();
     }
 
-    private Graph newPullBoxGraph(Node oldAgentNode, Node newAgentNode) {
+    private Graph newPullBoxGraph(Node oldBoxNode, Node oldAgentNode, Node newAgentNode) {
         Command command = new Command(Command.Type.Pull, getDir(oldAgentNode, newAgentNode),
-                getDir(oldAgentNode, newAgentNode));
+                getDir(oldAgentNode, oldBoxNode));
+        if (command.dir1.equals(Command.Dir.E) && command.dir2.equals(Command.Dir.E)) {
+            System.out.println();
+        }
         Graph graph = this.childState();
         graph.actions[Character.getNumericValue(this.agents.get(oldAgentNode.getId()).getLetter())] = command;
         graph.moveAgent(oldAgentNode, newAgentNode);
-        graph.moveBox(newAgentNode, oldAgentNode);
+        graph.moveBox(oldBoxNode, oldAgentNode);
         return graph;
     }
 
@@ -275,6 +275,67 @@ public class Graph {
         } else {
             return null;
         }
+    }
+
+    public Graph mergeGraphs(Graph graph) {
+        Graph newGraph = this.childState();
+        newGraph.parent = this.parent;
+        newGraph.actions = mergeActions(graph);
+        newGraph.moveAgent(oldAgentNode(graph), newAgentNode(graph));
+        return newGraph;
+    }
+
+    public boolean canBeMerged(Graph graph) {
+        if (!this.parent.equals(graph.parent)) {
+            return false;
+        }
+        for (int i = 0; i < this.actions.length; i++) {
+            if ((this.actions[i].isNoOp() && graph.actions[i].isNoOp()) ||
+                    (!this.actions[i].isNoOp()) && !graph.actions[i].isNoOp()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private Command[] mergeActions(Graph graph) {
+        Command[] newActions = new Command[this.actions.length];
+        for (int i = 0; i < this.actions.length; i++) {
+            if (!this.actions[i].isNoOp()) {
+                newActions[i] = this.actions[i];
+            } else if (!graph.actions[i].isNoOp()) {
+                newActions[i] = graph.actions[i];
+            }
+        }
+        return newActions;
+    }
+
+    private Node newAgentNode(Graph graph) {
+        for (int i = 0; i < graph.actions.length; i++) {
+            if (!graph.actions[i].isNoOp()) {
+                List<Node> nodes = graph.getAgentNodes();
+                for (Node node : nodes) {
+                    if (graph.getAgent(node).getLetter() == Character.getNumericValue(i)) {
+                        return node;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    private Node oldAgentNode(Graph graph) {
+        for (int i = 0; i < graph.actions.length; i++) {
+            if (!graph.actions[i].isNoOp()) {
+                List<Node> nodes = graph.parent.getAgentNodes();
+                for (Node node : nodes) {
+                    if (graph.parent.getAgent(node).getLetter() == Character.getNumericValue(i)) {
+                        return node;
+                    }
+                }
+            }
+        }
+        return null;
     }
 
     public List<Graph> extractPlan() {
@@ -390,13 +451,15 @@ public class Graph {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Graph graph = (Graph) o;
-        return Objects.equals(getAgentNodes(), graph.getAgentNodes()) &&
-                Objects.equals(getBoxNodes(), graph.getBoxNodes());
+        return this.hashCode() == graph.hashCode();
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getAgentNodes(), getBoxNodes());
+        if (this._hash == 0) {
+            this._hash = Objects.hash(getAgentNodes(), getBoxNodes());
+        }
+        return this._hash;
     }
 
     public void setPriority(Priority priority) {
