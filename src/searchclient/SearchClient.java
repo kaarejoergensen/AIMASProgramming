@@ -176,7 +176,9 @@ public class SearchClient {
         while (!priorityList.isEmpty()) {
             Priority p = priorityList.poll();
 
+            //Also calls the intantiate priority nodes
             fullPlan.get(fullPlan.size() - 1).setPriority(p);
+
             strategy.addToFrontier(fullPlan.get(fullPlan.size() - 1));
 
 
@@ -284,27 +286,3 @@ public class SearchClient {
     }*/
 
 
-//            for(Priority group : this.priorityList){
-//                System.err.println("Testing subgoal " + group.toString());
-//
-//                    List<Node> tmp_goals = leafState.getGoalNodes();
-//
-//                    tmp_goals = tmp_goals.stream().filter(n -> group.getLetters().contains(n.getGoal())).collect(Collectors.toList());
-//                    List<Node> tmp_boxes = leafState.getBoxNodes();
-//                    tmp_boxes = tmp_boxes.stream().filter(n -> group.getLetters().contains(n.getBox())).collect(Collectors.toList());
-//
-//
-//                    if(leafState.isSubGoalState(tmp_goals,tmp_boxes)){
-//                        strategy.addToFrontier(leafState);
-//                        return leafState.extractPlan();
-//                    }
-//
-//                strategy.addToExplored(leafState);
-//                for (Graph n : leafState.getExpandedStates()) { // The list of expanded States is shuffled randomly; see State.java.
-//                    if (!strategy.isExplored(n) && !strategy.inFrontier(n)) {
-//                        strategy.addToFrontier(n);
-//                    }
-//                }
-//                iterations++;
-//
-//            }

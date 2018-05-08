@@ -20,7 +20,7 @@ public abstract class Heuristic implements Comparator<Graph> {
         }
         int result = 0;
 
-        for (Node agentNode : graph.getSpecificAgents()) {
+        for (Node agentNode : graph.getPriorityAgents()) {
             List<Node> boxNodesWithSameColor = graph.getPriorityBoxNodes();
             for (Node boxNode : boxNodesWithSameColor) {
                 result += graph.shortestPath(agentNode, boxNode, true,null).

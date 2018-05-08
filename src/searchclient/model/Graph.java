@@ -6,6 +6,7 @@ import searchclient.model.Elements.Box;
 import searchclient.model.Elements.Goal;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class Graph {
     private Graph parent;
@@ -19,6 +20,10 @@ public class Graph {
     private Command[] actions;
     private Priority priority;
     private int h;
+
+    public List<Node> priorityBoxes;
+    public List<Node> priorityGoals;
+    private List<Node> priorityAgents;
 
     public Graph(Graph parent, int rows, int columns, Map<String, Node> nodes,
                  Map<String, Agent> agents, Map<String, Box> boxes, Map<String, Goal> goals) {
@@ -37,12 +42,67 @@ public class Graph {
             this.g = 0;
         } else {
             this.g = this.parent.g + 1;
+
             if (this.parent.priority != null) {
                 this.priority = this.parent.priority;
+                /*
+                this.priorityAgents = this.parent.priorityAgents;
+                this.priorityGoals = this.parent.priorityGoals;
+                this.priorityBoxes = this.parent.priorityBoxes;
+                */
+
+                instantiatePriorityNodes();
             }
 
         }
         this.h = -1;
+
+    }
+
+    public void instantiatePriorityNodes(){
+        priorityBoxes = new ArrayList<>();
+        priorityGoals = new ArrayList<>();
+        priorityAgents = new ArrayList<>();
+
+
+        /*
+        this.goals.values().stream().filter(a ->priority.getLetters().contains(a.getLetter())).
+                forEach(a -> priorityGoals.add(allNodes.get((a.getNodeID()))));
+
+        this.boxes.values().stream().filter(a ->priority.getLetters().contains(Character.toLowerCase(a.getLetter()))).
+                forEach(a -> priorityGoals.add(allNodes.get((a.getNodeID()))));
+
+        this.agents.values().stream().filter(a ->priorityBoxes.contains(a.getColor())).
+                forEach(a -> priorityAgents.add(allNodes.get((a.getNodeID()))));
+
+        */
+
+        for (Node n : this.getBoxNodes()) {
+            Character x = getBox(n).getLetter();
+            for (Character t : priority.getLetters()) {
+                if (Character.toLowerCase(x) == Character.toLowerCase(t)) {
+                    priorityBoxes.add(n);
+                }
+            }
+        }
+
+        for (Node n : this.getGoalNodes()) {
+            Character x = getGoal(n).getLetter();
+            for (Character t : priority.getLetters()) {
+                if (Character.toLowerCase(x) == Character.toLowerCase(t)) {
+                    priorityGoals.add(n);
+                }
+            }
+        }
+
+
+        for (Node b : priorityBoxes) {
+            for (Node a : getAgentNodes()) {
+                if (getAgent(a).getColor().equals(getBox(b).getColor())) {
+                    priorityAgents.add(a);
+                }
+            }
+        }
     }
 
     public int getH() {
@@ -54,42 +114,15 @@ public class Graph {
     }
 
     public List<Node> getPriorityGoalNodes() {
-        List<Node> tmp_goals = new ArrayList<>();
-        for (Node n : this.getGoalNodes()) {
-            Character x = getGoal(n).getLetter();
-            for (Character t : priority.getLetters()) {
-                if (Character.toLowerCase(x) == Character.toLowerCase(t)) {
-                    tmp_goals.add(n);
-                }
-            }
-        }
-        return tmp_goals;
+        return priorityGoals;
     }
 
     public List<Node> getPriorityBoxNodes() {
-        List<Node> tmp_boxes = new ArrayList<>();
-        for (Node n : this.getBoxNodes()) {
-            Character x = getBox(n).getLetter();
-            for (Character t : priority.getLetters()) {
-                if (Character.toLowerCase(x) == Character.toLowerCase(t)) {
-                    tmp_boxes.add(n);
-                }
-            }
-        }
-        return tmp_boxes;
+        return priorityBoxes;
     }
 
-    public List<Node> getSpecificAgents() {
-        List<Node> tmp_agents = new ArrayList<>();
-        List<Node> relevantBoxes = getPriorityBoxNodes();
-        for (Node b : relevantBoxes) {
-            for (Node a : getAgentNodes()) {
-                if (getAgent(a).getColor().equals(getBox(b).getColor())) {
-                    tmp_agents.add(a);
-                }
-            }
-        }
-        return tmp_agents;
+    public List<Node> getPriorityAgents() {
+        return priorityAgents;
     }
 
 
@@ -390,5 +423,6 @@ public class Graph {
 
     public void setPriority(Priority priority) {
         this.priority = priority;
+        instantiatePriorityNodes();
     }
 }
