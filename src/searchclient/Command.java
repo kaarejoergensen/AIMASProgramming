@@ -94,6 +94,10 @@ public class Command {
         this.dir2 = d2;
     }
 
+    public boolean isNoOp() {
+        return this.actionType != null && this.actionType.equals(Type.NoOp);
+    }
+
     @Override
     public String toString() {
         if (this.actionType == Type.Move)
