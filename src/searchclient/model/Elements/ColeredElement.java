@@ -1,5 +1,6 @@
 package searchclient.model.Elements;
 
+import java.awt.*;
 import java.util.Objects;
 
 public class ColeredElement {
@@ -41,6 +42,12 @@ public class ColeredElement {
         if (other == null)
             return false;
         return Character.toLowerCase(this.letter) == Character.toLowerCase(other.getLetter());
+    }
+
+    public boolean hasSameColor(ColeredElement other) {
+        if (other == null)
+            return false;
+        return this.color.equals(other.getColor());
     }
 
     @Override

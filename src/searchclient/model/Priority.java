@@ -3,20 +3,21 @@ package searchclient.model;
 import java.util.List;
 
 public class Priority {
-    private List<Character> letter;
+    private List<String> nodes_id;
     private int priority;
 
-    public Priority(List<Character> letter, int priority) {
-        this.letter = letter;
+
+    public Priority(List<String> nodes_id, int priority) {
+        this.nodes_id = nodes_id;
         this.priority = priority;
     }
 
-    public List<Character> getLetters() {
-        return letter;
+    public List<String> getIDs() {
+        return nodes_id;
     }
 
-    public void setLetter(List<Character> letter) {
-        this.letter = letter;
+    public void setLetter(List<String> id) {
+        this.nodes_id= id;
     }
 
     public int getPriority() {
@@ -30,7 +31,7 @@ public class Priority {
     @Override
     public String toString() {
         return "Priority{" +
-                "letter=" + letter +
+                "id=" + nodes_id +
                 ", priority=" + priority +
                 '}';
     }

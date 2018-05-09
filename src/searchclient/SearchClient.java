@@ -203,7 +203,7 @@ public class SearchClient {
                 /*System.err.println(leafState.actionsToString());
                 System.err.println(((StrategyBestFirst)strategy).h(leafState));*/
                 //System.err.println(leafState);
-                //Thread.sleep(1000);
+                //Thread.sleep(500);
 
                 strategy.addToExplored(leafState);
                 for (Graph n : leafState.getExpandedStates()) {
@@ -223,10 +223,10 @@ public class SearchClient {
 
     private void generatePriorityList(Graph graph) {
         //Går utfra at det kun er 1 boks pr mål, og kun 1 mål pr char
-        Map<Character, Integer> priorityMap = new HashMap<>();
+        Map<String, Integer> priorityMap = new HashMap<>();
         for (Node goalNode : graph.getGoalNodes()) {
             //Initates a new value to the hashmap
-            priorityMap.put(graph.getGoal(goalNode).getLetter(), 0);
+            priorityMap.put(graph.getGoal(goalNode).getNodeID(), 0);
             //Finds all the goals between g and corresponding boxes
             for (Node boxNode : graph.getBoxNodes()) {
                 if (Character.toLowerCase(graph.getBox(boxNode).getLetter()) == graph.getGoal(goalNode).getLetter()) {
@@ -237,7 +237,7 @@ public class SearchClient {
                     for (Node pathNode : path) {
                         if (graph.getGoal(pathNode) != null) {
                             //Add value to tmp
-                            priorityMap.put(graph.getGoal(goalNode).getLetter(), priorityMap.get(graph.getGoal(goalNode).getLetter()) + 1);
+                            priorityMap.put(graph.getGoal(goalNode).getNodeID(), priorityMap.get(graph.getGoal(goalNode).getNodeID()) + 1);
                         }
                     }
                 }
@@ -245,16 +245,17 @@ public class SearchClient {
         }
 
         List<Priority> priorities = new ArrayList<>();
-        for (Character key : priorityMap.keySet()) {
+        for (String key : priorityMap.keySet()) {
             Integer priority = priorityMap.get(key);
             Optional<Priority> optionalPriority = priorities.stream().filter(p -> p.getPriority() == priority).findFirst();
             if (optionalPriority.isPresent()) {
-                optionalPriority.get().getLetters().add(key);
+                optionalPriority.get().getIDs().add(key);
             } else {
                 priorities.add(new Priority(new ArrayList<>(Collections.singletonList(key)), priority));
             }
         }
         priorityList.addAll(priorities);
+        System.err.println("PRIO LIST BRO: "  + Arrays.toString(priorityList.toArray()));
     }
 }
    /* public boolean getHelpFromAHomie(Graph state, List<Node> relevantAgents, List<Node> relevantBoxes, List<Node> relevantGoals){

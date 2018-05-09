@@ -21,10 +21,6 @@ public class Graph {
     private Priority priority;
     private int h;
 
-    public List<Node> priorityBoxes;
-    public List<Node> priorityGoals;
-    private List<Node> priorityAgents;
-
     public Graph(Graph parent, int rows, int columns, Map<String, Node> nodes,
                  Map<String, Agent> agents, Map<String, Box> boxes, Map<String, Goal> goals) {
         this.parent = parent;
@@ -65,9 +61,9 @@ public class Graph {
     public List<Node> getPriorityGoalNodes() {
         List<Node> priorityGoals = new ArrayList<>();
         for (Node n : this.getGoalNodes()) {
-            Character x = getGoal(n).getLetter();
-            for (Character t : priority.getLetters()) {
-                if (Character.toLowerCase(x) == Character.toLowerCase(t)) {
+
+            for (String s : priority.getIDs()) {
+                if (n.getId().equals(s)) {
                     priorityGoals.add(n);
                 }
             }
@@ -78,12 +74,13 @@ public class Graph {
     public List<Node> getPriorityBoxNodes() {
         List<Node> priorityBoxes = new ArrayList<>();
 
-
         for (Node n : this.getBoxNodes()) {
-            Character x = getBox(n).getLetter();
-            for (Character t : priority.getLetters()) {
-                if (Character.toLowerCase(x) == Character.toLowerCase(t)) {
+            for (Node g : getPriorityGoalNodes()) {
+                Character x1 = getBox(n).getLetter();
+                Character x2 = getGoal(g).getLetter();
+                if (Character.toLowerCase(x1) == Character.toLowerCase(x2)) {
                     priorityBoxes.add(n);
+
                 }
             }
         }
