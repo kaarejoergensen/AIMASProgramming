@@ -11,9 +11,17 @@ public class Box extends ColeredElement {
         }
     }
 
+   public Box(String nodeID, char letter, String color, String designatedGoal) {
+        super(nodeID, letter, color);
+        if (this.getColor() == null) {
+            this.setColor("blue");
+        }
+        this.setDesignatedGoal(designatedGoal);
+   }
+
     @Override
     public Box clone() {
-        return new Box(getNodeID(), getLetter(), getColor());
+        return new Box(getNodeID(), getLetter(), getColor(), getDesignatedGoal());
     }
 
     public String getDesignatedGoal() {

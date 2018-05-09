@@ -101,6 +101,7 @@ public class SearchClient {
         Map<String, Node> nodes = Arrays.stream(tiles).flatMap(Arrays::stream).
                 filter(Objects::nonNull).collect(Collectors.toMap(Node::getId, n -> n));
         this.initialState = new Graph(null, rows, columns, nodes, agents, boxes, goals);
+        designateBoxes(initialState);
         generatePriorityList(initialState);
     }
 
@@ -222,27 +223,27 @@ public class SearchClient {
     }
 
     private void generatePriorityList(Graph graph) {
+
         //Går utfra at det kun er 1 boks pr mål, og kun 1 mål pr char
         Map<String, Integer> priorityMap = new HashMap<>();
-        for (Node goalNode : graph.getGoalNodes()) {
-            //Initates a new value to the hashmap
-            priorityMap.put(graph.getGoal(goalNode).getNodeID(), 0);
-            //Finds all the goals between g and corresponding boxes
-            for (Node boxNode : graph.getBoxNodes()) {
-                if (Character.toLowerCase(graph.getBox(boxNode).getLetter()) == graph.getGoal(goalNode).getLetter()) {
-                    List<Node> path = graph.shortestPath(boxNode, goalNode, false, null)
-                            .orElse(graph.shortestPath(boxNode, goalNode, true, null).
-                                    orElse(new ArrayList<>()));
-                    //Counts the amount of goals on the way
-                    for (Node pathNode : path) {
-                        if (graph.getGoal(pathNode) != null) {
-                            //Add value to tmp
-                            priorityMap.put(graph.getGoal(goalNode).getNodeID(), priorityMap.get(graph.getGoal(goalNode).getNodeID()) + 1);
-                        }
-                    }
+
+
+        for(Node boxNode : graph.getBoxNodes()){
+            Node goal = graph.getDesignatedGoal(boxNode);
+            priorityMap.put(graph.getGoal(goal).getNodeID(), 0);
+
+            List<Node> path = graph.shortestPath(boxNode, goal, false, null)
+                    .orElse(graph.shortestPath(boxNode, goal, true, null).
+                            orElse(new ArrayList<>()));
+
+            for(Node n : path){
+                if (graph.getGoal(n) != null) {
+                    //Add value to tmp
+                    priorityMap.put(graph.getGoal(goal).getNodeID(), priorityMap.get(graph.getGoal(goal).getNodeID()) + 1);
                 }
             }
         }
+
 
         List<Priority> priorities = new ArrayList<>();
         for (String key : priorityMap.keySet()) {
@@ -254,10 +255,33 @@ public class SearchClient {
                 priorities.add(new Priority(new ArrayList<>(Collections.singletonList(key)), priority));
             }
         }
+
         priorityList.addAll(priorities);
         System.err.println("PRIO LIST BRO: "  + Arrays.toString(priorityList.toArray()));
     }
+
+
+    public void designateBoxes(Graph graph){
+        List<Node> boxes = graph.getBoxNodes();
+        for(Node goal : graph.getGoalNodes()){
+            int shortest = Integer.MAX_VALUE;
+            Node finalBox = null;
+            for(Node box : boxes){
+                if(graph.getBox(box).hasSameLetter(graph.getGoal(goal))) {
+                    Optional<List<Node>> path = graph.shortestPath(goal, box, true, null);
+                    if (path.isPresent() && path.get().size() < shortest) {
+                        shortest = path.get().size();
+                        finalBox = box;
+                    }
+                }
+            }
+            graph.getBox(finalBox).setDesignatedGoal(goal.getId());
+            boxes.remove(finalBox);
+        }
+    }
 }
+
+
    /* public boolean getHelpFromAHomie(Graph state, List<Node> relevantAgents, List<Node> relevantBoxes, List<Node> relevantGoals){
         for(Node a : relevantAgents){
             for(Node b : relevantBoxes){

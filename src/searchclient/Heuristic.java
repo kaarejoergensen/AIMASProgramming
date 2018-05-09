@@ -31,12 +31,10 @@ public abstract class Heuristic implements Comparator<Graph> {
             }
         }
         for (Node boxNode : graph.getPriorityBoxNodes()) {
-            List<Node> goalNodesWithSameLetter = graph.getGoalNodes();
-            for (Node goalNode : goalNodesWithSameLetter) {
-                if (!goalNode.equals(boxNode) && graph.getBox(boxNode).hasSameLetter(graph.getGoal(goalNode))) {
-                    result += 2 * (graph.shortestPath(boxNode, goalNode, true,null).
-                            orElse(new ArrayList<>(10)).size() + 1);
-                }
+            Node goal = graph.getDesignatedGoal(boxNode);
+            if (!goal.equals(boxNode)) {
+                result += 2 * (graph.shortestPath(boxNode, goal, true,null).
+                        orElse(new ArrayList<>(10)).size() + 1);
             }
         }
         graph.setH(result);
