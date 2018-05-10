@@ -15,6 +15,7 @@ import searchclient.model.Priority;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.rmi.MarshalException;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -335,12 +336,36 @@ public class SearchClient {
     public void assignAgentsToBoxes(Graph graph) {
         List<Node> boxes = graph.getBoxNodes();
         List<Node> agents = graph.getAgentNodes();
+        List<List<Node>> agentPrioList = null;
+        int xlenTemp = 0;
+        int ylenTemp = 0;
+        int xlen = 0;
+        int ylen = 0;
+        Node chosenAgent = null;
         //sort boxes list alphabetically
+        //check that the box and agent fits each other
+        // check for color
         for (Node box : boxes) {
             //find length from box to every agent
             for (Node agent : agents) {
-                //måske lav det om til x/y koordinator?
-                Optional<List<Node>> result = graph.shortestPath(box, agent, true, null);
+                if(graph.getAgent(agent).getColor().equals(graph.getBox(box).getColor())){
+                    xlenTemp = Math.abs(agent.getX()-box.getX());
+                    ylenTemp = Math.abs(agent.getY()-box.getY());
+
+                    if ((xlenTemp + ylenTemp) < (xlen + ylen))
+                        xlen = xlenTemp;
+                        ylen = ylenTemp;
+                        List<Node> agentTargetList = null;
+                        agentTargetList.add(agent);
+                        agentTargetList.add(box);
+
+
+                }
+
+
+
+                //for hver box
+                //Optional<List<Node>> result = graph.shortestPath(box, agent, true, null);
                 //length of result list
 
             }
