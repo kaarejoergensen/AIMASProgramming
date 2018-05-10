@@ -24,7 +24,6 @@ public abstract class Heuristic implements Comparator<Graph> {
         for (Node agentNode : graph.getPriorityAgents()) {
 
             Node currentBox = graph.getAgentsCurrentBox(agentNode);
-
             result += graph.shortestPath(agentNode, currentBox, true, null).
                         orElse(new ArrayList<>(10)).size();
 

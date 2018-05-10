@@ -184,7 +184,7 @@ public class Graph {
 
     public boolean isBoxAtGoal(Node b){
         Node goal = getDesignatedGoal(b);
-        return goal.equals(b);
+        return goal.equals(b) && getBox(b).getDesignatedGoal().equals(getGoal(goal).getNodeID());
     }
 
     public List<Graph> getExpandedStates() {

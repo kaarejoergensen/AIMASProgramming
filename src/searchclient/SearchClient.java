@@ -216,8 +216,8 @@ public class SearchClient {
 
                 /*System.err.println(leafState.actionsToString());
                 System.err.println(((StrategyBestFirst)strategy).h(leafState));*/
-                System.err.println(leafState);
-                Thread.sleep(500);
+               // System.err.println(leafState);
+               // Thread.sleep(1000);
 
                 strategy.addToExplored(leafState);
                 for (Graph n : leafState.getExpandedStates()) {
@@ -311,7 +311,9 @@ public class SearchClient {
                 }
             }
         }
-        g.getAgent(a).setCurrentBoxID(g.getBox(current).getBoxID());
+        if(current != null){
+            g.getAgent(a).setCurrentBoxID(g.getBox(current).getBoxID());
+        }
     }
 
 }
