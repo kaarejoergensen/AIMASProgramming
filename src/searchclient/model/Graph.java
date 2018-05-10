@@ -182,6 +182,11 @@ public class Graph {
         return goalNodes.equals(boxNodes) && goalNodes.stream().allMatch(g -> getGoal(g).hasSameLetter(getBox(g)));
     }
 
+    public boolean isBoxAtGoal(Node b){
+        Node goal = getDesignatedGoal(b);
+        return goal.equals(b) && getGoal(goal).getColor().equals(getBox(b).getColor());
+    }
+
     public List<Graph> getExpandedStates() {
         List<Graph> expandedStates = new ArrayList<>();
         for (Node agentNode : this.getAgentNodes()) {
@@ -467,4 +472,14 @@ public class Graph {
     public Node getDesignatedGoal(Node n){
         return this.getAllNodes().get(getBox(n).getDesignatedGoal());
     }
+
+    public Node getAgentsCurrentBox(Node n ){
+        for(Node g : getBoxNodes()){
+            if(getAgent(n).getCurrentBoxID().equals(getBox(g).getBoxID()))
+                return g;
+        }
+        return null;
+    }
+
+
 }

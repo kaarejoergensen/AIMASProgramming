@@ -3,12 +3,10 @@ package searchclient.model.Elements;
 public class Box extends ColeredElement {
 
     private String designatedGoal;
+    private String boxID;
 
     public Box(String nodeID, char letter, String color) {
-        super(nodeID, letter, color);
-        if (this.getColor() == null) {
-            this.setColor("blue");
-        }
+        this(nodeID,letter,color,null);
     }
 
    public Box(String nodeID, char letter, String color, String designatedGoal) {
@@ -17,6 +15,7 @@ public class Box extends ColeredElement {
             this.setColor("blue");
         }
         this.setDesignatedGoal(designatedGoal);
+        this.boxID = nodeID;
    }
 
     @Override
@@ -30,5 +29,9 @@ public class Box extends ColeredElement {
 
     public void setDesignatedGoal(String designatedGoal) {
         this.designatedGoal = designatedGoal;
+    }
+
+    public String getBoxID() {
+        return boxID;
     }
 }

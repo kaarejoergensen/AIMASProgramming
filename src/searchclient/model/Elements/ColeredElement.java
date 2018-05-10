@@ -5,6 +5,7 @@ import java.util.Objects;
 
 public class ColeredElement {
     private String nodeID;
+
     private char letter;
     private String color;
 

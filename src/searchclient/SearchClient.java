@@ -103,6 +103,11 @@ public class SearchClient {
         this.initialState = new Graph(null, rows, columns, nodes, agents, boxes, goals);
         designateBoxes(initialState);
         generatePriorityList(initialState);
+
+        //Initates everyones queue
+        for(Node n : initialState.getAgentNodes()){
+            setNextBoxToAgent(initialState,n);
+        }
     }
 
     public static void main(String[] args) throws Exception {
@@ -201,10 +206,18 @@ public class SearchClient {
                     break;
                 }
 
+                for(Node agent : leafState.getAgentNodes()){
+                    Node box = leafState.getAgentsCurrentBox(agent);
+
+                    if(leafState.isBoxAtGoal(box)){
+                        setNextBoxToAgent(leafState,agent);
+                    }
+                }
+
                 /*System.err.println(leafState.actionsToString());
                 System.err.println(((StrategyBestFirst)strategy).h(leafState));*/
-                //System.err.println(leafState);
-                //Thread.sleep(500);
+                System.err.println(leafState);
+                Thread.sleep(500);
 
                 strategy.addToExplored(leafState);
                 for (Graph n : leafState.getExpandedStates()) {
@@ -279,6 +292,22 @@ public class SearchClient {
             boxes.remove(finalBox);
         }
     }
+
+    public void setNextBoxToAgent(Graph g, Node a) {
+        int shortest = Integer.MAX_VALUE;
+        Node current = null;
+        for (Node box : g.getBoxNodes()) {
+            if (g.getAgent(a).getColor().equals(g.getBox(box).getColor())) {
+                Optional<List<Node>> path = g.shortestPath(a, box, true, null);
+                if (path.isPresent() && path.get().size() < shortest) {
+                    shortest = path.get().size();
+                    current = box;
+                }
+            }
+        }
+        g.getAgent(a).setCurrentBoxID(g.getBox(current).getBoxID());
+    }
+
 }
 
 

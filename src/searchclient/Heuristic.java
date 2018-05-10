@@ -22,18 +22,17 @@ public abstract class Heuristic implements Comparator<Graph> {
         int result = 0;
 
         for (Node agentNode : graph.getPriorityAgents()) {
-            List<Node> boxNodesWithSameColor = graph.getPriorityBoxNodes();
-            for (Node boxNode : boxNodesWithSameColor) {
-                if (graph.getBox(boxNode).hasSameColor(graph.getAgent(agentNode))) {
-                    result += graph.shortestPath(agentNode, boxNode, true, null).
-                            orElse(new ArrayList<>(10)).size();
-                }
-            }
+
+            Node currentBox = graph.getAgentsCurrentBox(agentNode);
+
+            result += graph.shortestPath(agentNode, currentBox, true, null).
+                        orElse(new ArrayList<>(10)).size();
+
         }
         for (Node boxNode : graph.getPriorityBoxNodes()) {
             Node goal = graph.getDesignatedGoal(boxNode);
             if (!goal.equals(boxNode)) {
-                result += 2 * (graph.shortestPath(boxNode, goal, true,null).
+                result += 3 * (graph.shortestPath(boxNode, goal, true,null).
                         orElse(new ArrayList<>(10)).size() + 1);
             }
         }
