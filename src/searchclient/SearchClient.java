@@ -331,6 +331,22 @@ public class SearchClient {
         }
     }
 
+
+    public void assignAgentsToBoxes(Graph graph) {
+        List<Node> boxes = graph.getBoxNodes();
+        List<Node> agents = graph.getAgentNodes();
+        //sort boxes list alphabetically
+        for (Node box : boxes) {
+            //find length from box to every agent
+            for (Node agent : agents) {
+                //måske lav det om til x/y koordinator?
+                Optional<List<Node>> result = graph.shortestPath(box, agent, true, null);
+                //length of result list
+
+            }
+
+        }
+    }
 }
 
 
