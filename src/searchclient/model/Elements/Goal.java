@@ -1,9 +1,11 @@
 package searchclient.model.Elements;
 
-public class Goal extends ColeredElement {
+import searchclient.model.Node;
 
-    public Goal(String nodeID, char letter) {
-        super(nodeID, letter, null);
+public class Goal extends ColoredElement {
+
+    public Goal(String ID, Node node, char letter) {
+        super(ID, node, letter, null);
     }
 
 }

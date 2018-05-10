@@ -106,7 +106,7 @@ public class SearchClient {
 
         //Initates everyones queue
         for(Node n : initialState.getAgentNodes()){
-            setNextBoxToAgent(initialState,n);
+            setNextBoxToAgent(initialState, n);
         }
     }
 

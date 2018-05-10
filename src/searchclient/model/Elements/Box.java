@@ -1,26 +1,26 @@
 package searchclient.model.Elements;
 
-public class Box extends ColeredElement {
+import searchclient.model.Node;
+
+public class Box extends ColoredElement {
 
     private String designatedGoal;
-    private String boxID;
 
-    public Box(String nodeID, char letter, String color) {
-        this(nodeID,letter,color,null);
+    public Box(String ID, Node node, char letter, String color) {
+        this(ID, node, letter, color, null);
     }
 
-   public Box(String nodeID, char letter, String color, String designatedGoal) {
-        super(nodeID, letter, color);
+    public Box(String ID, Node node, char letter, String color, String designatedGoal) {
+        super(ID, node, letter, color);
         if (this.getColor() == null) {
             this.setColor("blue");
         }
-        this.setDesignatedGoal(designatedGoal);
-        this.boxID = nodeID;
-   }
+        this.designatedGoal = designatedGoal;
+    }
 
     @Override
     public Box clone() {
-        return new Box(getNodeID(), getLetter(), getColor(), getDesignatedGoal());
+        return new Box(getID(), getNode(), getLetter(), getColor(), getDesignatedGoal());
     }
 
     public String getDesignatedGoal() {
@@ -29,9 +29,5 @@ public class Box extends ColeredElement {
 
     public void setDesignatedGoal(String designatedGoal) {
         this.designatedGoal = designatedGoal;
-    }
-
-    public String getBoxID() {
-        return boxID;
     }
 }
