@@ -243,7 +243,13 @@ public class SearchClient {
 
         for(Node boxNode : graph.getBoxNodes()){
             Node goal = graph.getDesignatedGoal(boxNode);
-            priorityMap.put(graph.getGoal(goal).getNodeID(), 0);
+            // Sees if there is a box to goal
+            try{
+                priorityMap.put(graph.getGoal(goal).getNodeID(), 0);
+            }catch (NullPointerException e){
+                //
+                System.err.println("Box with id: " + graph.getBox(boxNode).getBoxID() + " don't have any goals :(");
+            }
 
             List<Node> path = graph.shortestPath(boxNode, goal, false, null)
                     .orElse(graph.shortestPath(boxNode, goal, true, null).

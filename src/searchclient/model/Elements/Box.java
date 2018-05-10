@@ -6,21 +6,22 @@ public class Box extends ColeredElement {
     private String boxID;
 
     public Box(String nodeID, char letter, String color) {
-        this(nodeID,letter,color,null);
+        this(nodeID,letter,color,null,nodeID);
+
     }
 
-   public Box(String nodeID, char letter, String color, String designatedGoal) {
+   public Box(String nodeID, char letter, String color, String designatedGoal, String boxID) {
         super(nodeID, letter, color);
         if (this.getColor() == null) {
             this.setColor("blue");
         }
         this.setDesignatedGoal(designatedGoal);
-        this.boxID = nodeID;
+        this.boxID = boxID;
    }
 
     @Override
     public Box clone() {
-        return new Box(getNodeID(), getLetter(), getColor(), getDesignatedGoal());
+        return new Box(getNodeID(), getLetter(), getColor(), getDesignatedGoal(), getBoxID());
     }
 
     public String getDesignatedGoal() {
