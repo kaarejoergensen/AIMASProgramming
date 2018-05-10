@@ -77,7 +77,7 @@ public class Graph {
         List<Node> priorityBoxes = new ArrayList<>();
             for (Node g : getPriorityGoalNodes()) {
                 for(Node b : getBoxNodes()){
-                    if(getBox(b).getDesignatedGoal().equals(g.getId())){
+                    if(getBox(b).getDesignatedGoal() != null && getBox(b).getDesignatedGoal().equals(g.getId())){
                         priorityBoxes.add(b);
                     }
                 }
