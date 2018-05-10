@@ -69,26 +69,26 @@ public class SearchClient {
                 if (chr != '+') {
                     Node node = null;
                     if ('0' <= chr && chr <= '9') {
-                        node = new Node(String.valueOf(count), col, row);
-                        agents.put(node.getId(), new Agent(String.valueOf(count), chr, colorMap.get(chr)));
+                        node = new Node(String.valueOf(col) + "," + String.valueOf(row), col, row);
+                        agents.put(node.getId(), new Agent(node.getId(), chr, colorMap.get(chr)));
                     } else if ('A' <= chr && chr <= 'Z') {
-                        node = new Node(String.valueOf(count), col, row);
-                        boxes.put(node.getId(), new Box(String.valueOf(count), chr, colorMap.get(chr)));
+                        node = new Node(String.valueOf(col) + "," + String.valueOf(row), col, row);
+                        boxes.put(node.getId(), new Box(node.getId(), chr, colorMap.get(chr)));
                     } else if ('a' <= chr && chr <= 'z') {
-                        node = new Node(String.valueOf(count), col, row);
-                        goals.put(node.getId(), new Goal(String.valueOf(count), chr));
+                        node = new Node(String.valueOf(col) + "," + String.valueOf(row), col, row);
+                        goals.put(node.getId(), new Goal(node.getId(), chr));
                     } else if (chr == ' ') {
-                        node = new Node(String.valueOf(count), col, row);
+                        node = new Node(String.valueOf(col) + "," + String.valueOf(row), col, row);
                     } else {
                         System.err.println("Error, read invalid level character: " + (int) chr);
                         System.exit(1);
                     }
                     tiles[row][col] = node;
-                    if (tiles[row - 1][col] != null) {
+                    if (row > 0 && tiles[row - 1][col] != null) {
                         node.addEdge(tiles[row - 1][col].getId());
                         tiles[row - 1][col].addEdge(node.getId());
                     }
-                    if (tiles[row][col - 1] != null) {
+                    if (col > 0 && tiles[row][col - 1] != null) {
                         node.addEdge(tiles[row][col - 1].getId());
                         tiles[row][col - 1].addEdge(node.getId());
                     }
@@ -103,11 +103,6 @@ public class SearchClient {
         this.initialState = new Graph(null, rows, columns, nodes, agents, boxes, goals);
         designateBoxes(initialState);
         generatePriorityList(initialState);
-
-        //Initates everyones queue
-        for(Node n : initialState.getAgentNodes()){
-            setNextBoxToAgent(initialState,n);
-        }
     }
 
     public static void main(String[] args) throws Exception {
@@ -184,7 +179,10 @@ public class SearchClient {
 
             //Also calls the intantiate priority nodes
             fullPlan.get(fullPlan.size() - 1).setPriority(p);
-
+            //Initates everyones queue
+            for (Node n : fullPlan.get(fullPlan.size() - 1).getAgentNodes()) {
+                setNextBoxToAgent(fullPlan.get(fullPlan.size() - 1), n);
+            }
             strategy.addToFrontier(fullPlan.get(fullPlan.size() - 1));
 
 
@@ -206,18 +204,19 @@ public class SearchClient {
                     break;
                 }
 
-                for(Node agent : leafState.getAgentNodes()){
+                for (Node agent : leafState.getAgentNodes()) {
                     Node box = leafState.getAgentsCurrentBox(agent);
 
-                    if(leafState.isBoxAtGoal(box)){
-                        setNextBoxToAgent(leafState,agent);
+                    if (leafState.isBoxAtGoal(box)) {
+                        setNextBoxToAgent(leafState, agent);
                     }
                 }
 
-                /*System.err.println(leafState.actionsToString());
-                System.err.println(((StrategyBestFirst)strategy).h(leafState));*/
-               // System.err.println(leafState);
-               // Thread.sleep(1000);
+//                System.err.println(leafState.actionsToString());
+//                System.err.println(((StrategyBestFirst)strategy).h(leafState));
+//                System.err.println(leafState);
+//                Thread.sleep(1000);
+//                leafState.getAgentNodes().forEach(n -> System.err.println(leafState.getAgent(n).getCurrentBoxID()));
 
                 strategy.addToExplored(leafState);
                 for (Graph n : leafState.getExpandedStates()) {
@@ -241,12 +240,12 @@ public class SearchClient {
         Map<String, Integer> priorityMap = new HashMap<>();
 
 
-        for(Node boxNode : graph.getBoxNodes()){
+        for (Node boxNode : graph.getBoxNodes()) {
             Node goal = graph.getDesignatedGoal(boxNode);
             // Sees if there is a box to goal
-            try{
+            try {
                 priorityMap.put(graph.getGoal(goal).getNodeID(), 0);
-            }catch (NullPointerException e){
+            } catch (NullPointerException e) {
                 //
                 System.err.println("Box with id: " + graph.getBox(boxNode).getBoxID() + " don't have any goals :(");
             }
@@ -255,7 +254,7 @@ public class SearchClient {
                     .orElse(graph.shortestPath(boxNode, goal, true, null).
                             orElse(new ArrayList<>()));
 
-            for(Node n : path){
+            for (Node n : path) {
                 if (graph.getGoal(n) != null) {
                     //Add value to tmp
                     priorityMap.put(graph.getGoal(goal).getNodeID(), priorityMap.get(graph.getGoal(goal).getNodeID()) + 1);
@@ -276,17 +275,17 @@ public class SearchClient {
         }
 
         priorityList.addAll(priorities);
-        System.err.println("PRIO LIST BRO: "  + Arrays.toString(priorityList.toArray()));
+        System.err.println("PRIO LIST BRO: " + Arrays.toString(priorityList.toArray()));
     }
 
 
-    public void designateBoxes(Graph graph){
+    public void designateBoxes(Graph graph) {
         List<Node> boxes = graph.getBoxNodes();
-        for(Node goal : graph.getGoalNodes()){
+        for (Node goal : graph.getGoalNodes()) {
             int shortest = Integer.MAX_VALUE;
             Node finalBox = null;
-            for(Node box : boxes){
-                if(graph.getBox(box).hasSameLetter(graph.getGoal(goal))) {
+            for (Node box : boxes) {
+                if (graph.getBox(box).hasSameLetter(graph.getGoal(goal))) {
                     Optional<List<Node>> path = graph.shortestPath(goal, box, true, null);
                     if (path.isPresent() && path.get().size() < shortest) {
                         shortest = path.get().size();
@@ -300,14 +299,30 @@ public class SearchClient {
     }
 
     public void setNextBoxToAgent(Graph g, Node a) {
+        List<Priority> currentList = new ArrayList<>(priorityList);
+        currentList.add(g.getPriority());
         int shortest = Integer.MAX_VALUE;
+        int priority = -1;
         Node current = null;
         for (Node box : g.getBoxNodes()) {
             if (g.getAgent(a).getColor().equals(g.getBox(box).getColor())) {
                 Optional<List<Node>> path = g.shortestPath(a, box, true, null);
-                if (path.isPresent() && path.get().size() < shortest) {
-                    shortest = path.get().size();
-                    current = box;
+                if (path.isPresent()) {
+                    int currentPriority = -1;
+                    for (Priority priority1 : currentList) {
+                        if (priority1.getIDs().contains(g.getBox(box).getDesignatedGoal())) {
+                            currentPriority = priority1.getPriority();
+                        }
+                    }
+                    if (currentPriority > priority) {
+                        current = box;
+                        priority = currentPriority;
+                        shortest = path.get().size();
+                    }
+                    if (path.get().size() < shortest && currentPriority == priority) {
+                        shortest = path.get().size();
+                        current = box;
+                    }
                 }
             }
         }

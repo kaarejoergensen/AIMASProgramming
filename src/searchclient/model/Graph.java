@@ -469,6 +469,10 @@ public class Graph {
         this.priority = priority;
     }
 
+    public Priority getPriority() {
+        return priority;
+    }
+
     public Node getDesignatedGoal(Node n){
         return this.getAllNodes().get(getBox(n).getDesignatedGoal());
     }
