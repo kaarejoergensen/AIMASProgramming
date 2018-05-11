@@ -179,7 +179,23 @@ public class Graph {
     public boolean isSubGoalState() {
         List<Node> goalNodes = this.getPriorityGoalNodes();
         List<Node> boxNodes = this.getPriorityBoxNodes();
-        return goalNodes.equals(boxNodes) && goalNodes.stream().allMatch(g -> getGoal(g).hasSameLetter(getBox(g)));
+        boolean result = true;
+        int iterator = 0;
+
+        for (Node goalnode : goalNodes) {
+            for (Node boxnode : boxNodes) {
+                if (goalnode.getX() == boxnode.getX() && goalnode.getY() == boxnode.getY()) {
+                    /*System.err.format(goalnode.getX().toString() + goalnode.getY().toString());
+                    System.err.format(boxnode.getX().toString() + boxnode.getY().toString());
+                    System.out.println();*/
+                    iterator++;
+
+                }
+            }
+        }
+        if (iterator == goalNodes.size() && iterator == boxNodes.size())
+            return goalNodes.equals(boxNodes) && goalNodes.stream().allMatch(g -> getGoal(g).hasSameLetter(getBox(g)));
+        else return false;
     }
 
     public boolean isBoxAtGoal(Node b){
