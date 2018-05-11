@@ -1,0 +1,5 @@
+1: Program fails when a box does not have a goal
+2: Program thinks its goal state has been reached too early
+3: Program fails when a goal does not have a box
+4: Agents cannot move concurrently
+5: If there are multiple goals for the same one box the program fails
