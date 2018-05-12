@@ -197,17 +197,21 @@ public class SearchClient {
                 }
                 Graph leafState = strategy.getAndRemoveLeaf();
 
-                if (priorityList.isEmpty()){
-                    generatePriorityList(leafState);
-                }
+
+
+
 
                 if (leafState.isSubGoalState()) {
-                    return leafState.extractPlan();
 
-                }
-                if (leafState.isGoalState()) {
-                    fullPlan.addAll(leafState.extractPlan());
-                    break;
+                    if (leafState.isGoalState()) {
+                        fullPlan.addAll(leafState.extractPlan());
+                        break;
+                    }
+
+                    if (priorityList.isEmpty()){
+                        generatePriorityList(leafState);
+                    }
+
                 }
 
 
