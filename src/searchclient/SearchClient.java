@@ -198,10 +198,11 @@ public class SearchClient {
 
                 Graph leafState = strategy.getAndRemoveLeaf();
 
-                if (leafState.isSubGoalState()) {
-                    if (priorityList.isEmpty()) return leafState.extractPlan();
-                    fullPlan.addAll(leafState.extractPlan());
-                    break;
+                if (leafState.isGoalState()){
+
+                        if (priorityList.isEmpty()) return leafState.extractPlan();
+                        fullPlan.addAll(leafState.extractPlan());
+                        break;
                 }
 
                 for (Node agent : leafState.getAgentNodes()) {

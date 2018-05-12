@@ -168,34 +168,48 @@ public class Graph {
     public boolean isGoalState() {
         List<Node> goalNodes = this.getGoalNodes();
         List<Node> boxNodes = this.getBoxNodes();
+        //int iterator = 0;
+        boolean allSubGoalsComplete = false;
         for (Node goal : goalNodes) {
-            if (!boxNodes.contains(goal)) {
+            /*if (!boxNodes.contains(goal)) {
                 return false;
-            }
+            }*/
+                for (Node box : boxNodes) {
+                        if (!isSubGoalState(box, goal)){
+                            return false;
+                        }
+
+                }
+
+
         }
-        return true;
-    }
-
-    public boolean isSubGoalState() {
-        List<Node> goalNodes = this.getPriorityGoalNodes();
-        List<Node> boxNodes = this.getPriorityBoxNodes();
-        boolean result = true;
-        int iterator = 0;
-
-        for (Node goalnode : goalNodes) {
+        /*for (Node goalnode : goalNodes) {
             for (Node boxnode : boxNodes) {
-                if (goalnode.getX() == boxnode.getX() && goalnode.getY() == boxnode.getY()) {
-                    /*System.err.format(goalnode.getX().toString() + goalnode.getY().toString());
+                if (goalnode.getX() == boxnode.getX() && goalnode.getY() == boxnode.getY() && goalnode.getId() == boxnode.getId()) {
+                    *//*System.err.format(goalnode.getX().toString() + goalnode.getY().toString());
                     System.err.format(boxnode.getX().toString() + boxnode.getY().toString());
-                    System.out.println();*/
+                    System.out.println();*//*
                     iterator++;
 
                 }
             }
         }
-        if (iterator == goalNodes.size() && iterator == boxNodes.size())
-            return goalNodes.equals(boxNodes) && goalNodes.stream().allMatch(g -> getGoal(g).hasSameLetter(getBox(g)));
-        else return false;
+        if (iterator == goalNodes.size() && iterator == boxNodes.size()) {
+            return true;
+        }
+        return false;*/
+        return true;
+    }
+
+    public boolean isSubGoalState(Node boxnode, Node goalnode) {
+        List<Node> goalNodes = this.getPriorityGoalNodes();
+        List<Node> boxNodes = this.getPriorityBoxNodes();
+
+        return goalNodes.equals(boxNodes) && goalNodes.stream().allMatch(g -> getGoal(g).hasSameLetter(getBox(g)));
+       /* if (goalnode.getX() == boxnode.getX() && goalnode.getY() == boxnode.getY()) {
+           return true;
+           }
+           else return false;*/
     }
 
     public boolean isBoxAtGoal(Node b){
