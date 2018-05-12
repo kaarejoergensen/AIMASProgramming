@@ -195,19 +195,21 @@ public class SearchClient {
                 if (strategy.frontierIsEmpty()) {
                     return null;
                 }
-
                 Graph leafState = strategy.getAndRemoveLeaf();
+
+                if (priorityList.isEmpty()){
+                    generatePriorityList(leafState);
+                }
 
                 if (leafState.isSubGoalState()) {
                     return leafState.extractPlan();
+
                 }
                 if (leafState.isGoalState()) {
                     fullPlan.addAll(leafState.extractPlan());
                     break;
                 }
-                if (priorityList.isEmpty()){
-                    generatePriorityList(leafState);
-                }
+
 
                 for (Node agent : leafState.getAgentNodes()) {
                     Node box = leafState.getAgentsCurrentBox(agent);
@@ -231,6 +233,8 @@ public class SearchClient {
                     }
                 }
                 iterations++;
+
+
             }
             strategy.clearFrontier();
         }
