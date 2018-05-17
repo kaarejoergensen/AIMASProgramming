@@ -197,22 +197,32 @@ public class SearchClient {
                 }
                 Graph leafState = strategy.getAndRemoveLeaf();
 
-
-
-
-
                 if (leafState.isSubGoalState()) {
-
-                    if (leafState.isGoalState()) {
-                        fullPlan.addAll(leafState.extractPlan());
-                        break;
+                    if (priorityList.isEmpty()) {
+                        if (leafState.isGoalState()) {
+                            return leafState.extractPlan();
+                        } else generatePriorityList(leafState);
                     }
-
-                    if (priorityList.isEmpty()){
-                        generatePriorityList(leafState);
-                    }
-
+                    fullPlan.addAll(leafState.extractPlan());
+                    break;
                 }
+
+
+
+                    /*if (leafState.isSubGoalState()) {
+                        if (priorityList.isEmpty()){
+                            // generatePriorityList(leafState);
+
+                            fullPlan.addAll(leafState.extractPlan());
+                            break;
+                        }
+                        if (leafState.isGoalState()) {
+
+                        }
+
+
+
+                }*/
 
 
                 for (Node agent : leafState.getAgentNodes()) {
