@@ -146,6 +146,9 @@ public class Graph {
     }
 
     public Box getBox(Node node) {
+        if (node == null) {
+            System.out.println();
+        }
         return this.boxes.get(node.getId());
     }
 
@@ -479,11 +482,16 @@ public class Graph {
 
     public Node getAgentsCurrentBox(Node n ){
         for(Node g : getBoxNodes()){
+            if (getAgent(n) == null || getAgent(n).getCurrentBoxID() == null || getBox(g) == null || getBox(g).getBoxID() == null) {
+                System.out.println();
+            }
             if(getAgent(n).getCurrentBoxID().equals(getBox(g).getBoxID()))
                 return g;
         }
         return null;
     }
 
-
+    public Map<String, Agent> getAgents() {
+        return agents;
+    }
 }

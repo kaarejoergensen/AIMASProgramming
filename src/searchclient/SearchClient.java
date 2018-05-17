@@ -205,10 +205,12 @@ public class SearchClient {
                 }
 
                 for (Node agent : leafState.getAgentNodes()) {
-                    Node box = leafState.getAgentsCurrentBox(agent);
+                    if (leafState.getAgent(agent).hasCurrentBoxID()) {
+                        Node box = leafState.getAgentsCurrentBox(agent);
 
-                    if (leafState.isBoxAtGoal(box)) {
-                        setNextBoxToAgent(leafState, agent);
+                        if (leafState.isBoxAtGoal(box)) {
+                            setNextBoxToAgent(leafState, agent);
+                        }
                     }
                 }
 

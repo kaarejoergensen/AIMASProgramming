@@ -8,7 +8,7 @@ public class Agent extends ColeredElement {
 
 
     public Agent(String nodeID, char letter, String color) {
-        this(nodeID,letter,color,null);
+        this(nodeID,letter,color,"");
     }
 
     public Agent(String nodeID, char letter, String color, String currentBoxID){
@@ -32,5 +32,7 @@ public class Agent extends ColeredElement {
         this.currentBoxID = currentBoxID;
     }
 
-
+    public boolean hasCurrentBoxID() {
+        return this.currentBoxID != null && !this.getCurrentBoxID().equals("");
+    }
 }
