@@ -1,12 +1,11 @@
 package searchclient;
 
+import searchclient.model.Elements.Box;
 import searchclient.model.Graph;
 import searchclient.model.Node;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
+import javax.swing.text.html.Option;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public abstract class Heuristic implements Comparator<Graph> {
@@ -22,25 +21,73 @@ public abstract class Heuristic implements Comparator<Graph> {
         int result = 0;
 
         List<Node> currentBoxes = new ArrayList<>();
-        for (Node agentNode : graph.getPriorityAgents()) {
-            Node currentBox = graph.getAgentsCurrentBox(agentNode);
-            result += graph.shortestPath(agentNode, currentBox, false, graph.getAgent(agentNode)).
-                    map(List::size).orElse(100);
-            currentBoxes.add(currentBox);
 
-        }
-        for (Node boxNode : currentBoxes) {
-            Node goal = graph.getDesignatedGoal(boxNode);
-            if (!goal.equals(boxNode)) {
-                result += graph.shortestPath(boxNode, goal, true, null).
-                        map(p -> 3 * p.size()).orElse(100);
-            }
-        }
+        result += rewardAgentToBox(currentBoxes, graph);
+        result += rewardBoxToGoal(currentBoxes, graph);
+
         graph.setH(result);
         return result;
     }
 
     public abstract int f(Graph n);
+
+    private int rewardAgentToBox(List<Node> currentBoxes, Graph graph){
+        int result = 0;
+
+        for (Node agentNode : graph.getPriorityAgents()) {
+            Node currentBox = graph.getAgentsCurrentBox(agentNode);
+            Box tmpBox = graph.getBox(currentBox);
+            if(tmpBox.checkIfPathIsClear(graph)){
+                List<Node> path = tmpBox.getPathToGoal();
+                if(tmpBox.getPathToGoal() != null){
+                    result += path.size();
+                }else {
+                    result += 110;
+                }
+            }else{
+                Node blockingBox = null;
+                for(Node n : tmpBox.getPathToGoal()){
+                    if(graph.getBox(n) != null && !graph.getBox(n).getBoxID().equals(currentBox.getId()) && graph.getBox(n).hasSameColor(graph.getAgent(agentNode))){
+                        blockingBox = n;
+                        break;
+                    }
+                }
+                result += graph.shortestPath(agentNode, blockingBox, true, graph.getAgent(agentNode)).map(List::size).orElse(200);
+
+                tmpBox.updatePathToGoal(graph);
+            }
+            currentBoxes.add(currentBox);
+        }
+        return result;
+    }
+
+    private int rewardBoxToGoal(List<Node> currentBoxes, Graph graph){
+        int result = 0;
+
+        //Clear path - get all non current boxes
+        List<Node> notCurrentBoxes = graph.getBoxNodes().stream().filter(p -> !currentBoxes.contains(p)).collect(Collectors.toList());
+
+        for (Node boxNode : currentBoxes) {
+            Node goal = graph.getDesignatedGoal(boxNode);
+            Box tempBox = graph.getBox(boxNode);
+            if (!goal.equals(boxNode)) {
+                if(tempBox.checkIfPathIsClear(graph)){
+                    Optional<List<Node>> path = graph.shortestPath(boxNode, goal, true, null);
+                    result += path.map(p -> 3 * p.size()).orElse(100);
+                }else{
+                    for (Node bn : notCurrentBoxes) {
+                        if(tempBox.getPathToGoal().contains(bn)) {
+                            result += 100;
+                        }
+                    }
+
+                }
+
+            }
+        }
+        return result;
+    }
+
 
     @Override
     public int compare(Graph n1, Graph n2) {

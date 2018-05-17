@@ -199,29 +199,36 @@ public class SearchClient {
                 Graph leafState = strategy.getAndRemoveLeaf();
 
                 if (leafState.isSubGoalState()) {
-                    if (priorityList.isEmpty()) return leafState.extractPlan();
+                    if (priorityList.isEmpty()){
+                        if(leafState.isGoalState()){
+                            return leafState.extractPlan();
+                        }else{
+                            generatePriorityList(leafState);
+                        }
+                    }
                     fullPlan.addAll(leafState.extractPlan());
                     break;
                 }
 
                 for (Node agent : leafState.getAgentNodes()) {
-                    Node box = leafState.getAgentsCurrentBox(agent);
+                    try{
+                        Node box = leafState.getAgentsCurrentBox(agent);
 
-                    if (leafState.isBoxAtGoal(box)) {
-                        setNextBoxToAgent(leafState, agent);
-                    }
+                        if (leafState.isBoxAtGoal(box)) {
+                            setNextBoxToAgent(leafState, agent);
+                        }
+                    }catch(NullPointerException e){}
                 }
 
-//                System.err.println(leafState.actionsToString());
-//                System.err.println(((StrategyBestFirst)strategy).h(leafState));
-//                System.err.println(leafState);
-//                Thread.sleep(1000);
-//                leafState.getAgentNodes().forEach(n -> System.err.println(leafState.getAgent(n).getCurrentBoxID()));
+//              System.err.println(leafState.actionsToString());
+//              System.err.println(((StrategyBestFirst)strategy).h(leafState));
+                System.err.println(leafState);
+                //Thread.sleep(1000);
+//              leafState.getAgentNodes().forEach(n -> System.err.println(leafState.getAgent(n).getCurrentBoxID()));
 
                 strategy.addToExplored(leafState);
                 for (Graph n : leafState.getExpandedStates()) {
                     if (!strategy.isExplored(n) && !strategy.inFrontier(n)) {
-                        ((StrategyBestFirst) strategy).h(n);
                         strategy.addToFrontier(n);
                     }
                 }
@@ -242,22 +249,24 @@ public class SearchClient {
 
         for (Node boxNode : graph.getBoxNodes()) {
             Node goal = graph.getDesignatedGoal(boxNode);
-            // Sees if there is a box to goal
-            try {
-                priorityMap.put(graph.getGoal(goal).getNodeID(), 0);
-            } catch (NullPointerException e) {
-                //
-                System.err.println("Box with id: " + graph.getBox(boxNode).getBoxID() + " don't have any goals :(");
-            }
+            if(!boxNode.equals(goal)){
+                // Sees if there is a box to goal
+                try {
+                    priorityMap.put(graph.getGoal(goal).getNodeID(), 0);
+                } catch (NullPointerException e) {
+                    //
+                    System.err.println("Box with id: " + graph.getBox(boxNode).getBoxID() + " don't have any goals :(");
+                }
 
-            List<Node> path = graph.shortestPath(boxNode, goal, false, null)
-                    .orElse(graph.shortestPath(boxNode, goal, true, null).
-                            orElse(new ArrayList<>()));
+                List<Node> path = graph.shortestPath(boxNode, goal, false, null)
+                        .orElse(graph.shortestPath(boxNode, goal, true, null).
+                                orElse(new ArrayList<>()));
 
-            for (Node n : path) {
-                if (graph.getGoal(n) != null) {
-                    //Add value to tmp
-                    priorityMap.put(graph.getGoal(goal).getNodeID(), priorityMap.get(graph.getGoal(goal).getNodeID()) + 1);
+                for (Node n : path) {
+                    if (graph.getGoal(n) != null) {
+                        //Add value to tmp
+                        priorityMap.put(graph.getGoal(goal).getNodeID(), priorityMap.get(graph.getGoal(goal).getNodeID()) + 1);
+                    }
                 }
             }
         }
@@ -279,6 +288,8 @@ public class SearchClient {
     }
 
 
+
+
     public void designateBoxes(Graph graph) {
         List<Node> boxes = graph.getBoxNodes();
         for (Node goal : graph.getGoalNodes()) {
@@ -294,6 +305,7 @@ public class SearchClient {
                 }
             }
             graph.getBox(finalBox).setDesignatedGoal(goal.getId());
+            graph.getBox(finalBox).updatePathToGoal(graph);
             boxes.remove(finalBox);
         }
     }
@@ -332,34 +344,5 @@ public class SearchClient {
     }
 
 }
-
-
-   /* public boolean getHelpFromAHomie(Graph state, List<Node> relevantAgents, List<Node> relevantBoxes, List<Node> relevantGoals){
-        for(Node a : relevantAgents){
-            for(Node b : relevantBoxes){
-                Optional<List<Node>> path = state.shortestPath(a,b,false);
-                if(path.isPresent()){
-                    if(path.get().isEmpty()){
-                        return false;
-                    }
-                }else{
-                    return false;
-                }
-            }
-        }
-        for(Node b : relevantBoxes){
-            for(Node g : relevantGoals){
-                Optional<List<Node>> path = state.shortestPath(b,g,false);
-                if(path.isPresent()){
-                    if(path.get().isEmpty()){
-                        return false;
-                    }
-                }else{
-                    return false;
-                }
-            }
-        }
-        return true;
-    }*/
 
 

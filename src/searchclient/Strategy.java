@@ -5,7 +5,7 @@ import searchclient.model.Graph;
 import java.util.*;
 
 public abstract class Strategy {
-    private HashSet<Graph> explored;
+    public HashSet<Graph> explored;
     private final long startTime;
 
     public Strategy() {
@@ -160,13 +160,13 @@ public abstract class Strategy {
         private Heuristic heuristic;
 
         private PriorityQueue<Graph> frontier;
-        private HashSet<Graph> frontierSet;
+        private HashMap<Graph, Graph> frontierSet;
 
         public StrategyBestFirst(Heuristic h) {
             super();
             this.heuristic = h;
             frontier = new PriorityQueue<>(heuristic);
-            frontierSet = new HashSet<>();
+            frontierSet = new HashMap<>();
         }
 
         @Override
@@ -183,7 +183,7 @@ public abstract class Strategy {
         @Override
         public void addToFrontier(Graph n) {
             frontier.add(n);
-            frontierSet.add(n);
+            frontierSet.put(n, n);
         }
 
         public void clearFrontier(){
@@ -206,7 +206,7 @@ public abstract class Strategy {
 
         @Override
         public boolean inFrontier(Graph n) {
-            return frontierSet.contains(n);
+            return frontierSet.containsKey(n);
         }
 
         @Override

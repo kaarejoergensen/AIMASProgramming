@@ -5,6 +5,7 @@ import searchclient.model.Elements.Agent;
 import searchclient.model.Elements.Box;
 import searchclient.model.Elements.Goal;
 
+import java.net.Inet4Address;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -225,6 +226,7 @@ public class Graph {
         Command command = new Command(Command.Type.Push, getDir(oldAgentNode, newAgentNode),
                 getDir(newAgentNode, newBoxNode));
         if (!Command.isOpposite(command.dir1, command.dir2)) {
+            command.boxID = this.getBox(newAgentNode).getBoxID();
             Graph graph = this.childState();
             graph.actions[Character.getNumericValue(this.agents.get(oldAgentNode.getId()).getLetter())] = command;
             graph.moveAgent(oldAgentNode, newAgentNode);
@@ -237,9 +239,7 @@ public class Graph {
     private Graph newPullBoxGraph(Node oldBoxNode, Node oldAgentNode, Node newAgentNode) {
         Command command = new Command(Command.Type.Pull, getDir(oldAgentNode, newAgentNode),
                 getDir(oldAgentNode, oldBoxNode));
-        if (command.dir1.equals(Command.Dir.E) && command.dir2.equals(Command.Dir.E)) {
-            System.out.println();
-        }
+        command.boxID = this.getBox(oldBoxNode).getBoxID();
         Graph graph = this.childState();
         graph.actions[Character.getNumericValue(this.agents.get(oldAgentNode.getId()).getLetter())] = command;
         graph.moveAgent(oldAgentNode, newAgentNode);
@@ -298,6 +298,7 @@ public class Graph {
                 return false;
             }
         }
+
         return true;
     }
 
@@ -454,7 +455,7 @@ public class Graph {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Graph graph = (Graph) o;
-        return this.hashCode() == graph.hashCode();
+        return Objects.equals(getAgentNodes(), getBoxNodes());
     }
 
     @Override

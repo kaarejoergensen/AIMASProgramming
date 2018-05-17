@@ -75,17 +75,20 @@ public class Command {
     public final Type actionType;
     public final Dir dir1;
     public final Dir dir2;
+    public String boxID;
 
     public Command() {
         this.actionType = Type.NoOp;
         this.dir1 = null;
         this.dir2 = null;
+        boxID = "";
     }
 
     public Command(Dir d) {
         this.actionType = Type.Move;
         this.dir1 = d;
         this.dir2 = null;
+        boxID = "";
     }
 
     public Command(Type t, Dir d1, Dir d2) {
