@@ -199,16 +199,32 @@ public class SearchClient {
                 Graph leafState = strategy.getAndRemoveLeaf();
 
                 if (leafState.isSubGoalState()) {
-                    if (priorityList.isEmpty()){
-                        if(leafState.isGoalState()){
+                    if (priorityList.isEmpty()) {
+                        if (leafState.isGoalState()) {
                             return leafState.extractPlan();
-                        }else{
-                            generatePriorityList(leafState);
-                        }
+                        } else generatePriorityList(leafState);
                     }
                     fullPlan.addAll(leafState.extractPlan());
                     break;
                 }
+
+
+
+                    /*if (leafState.isSubGoalState()) {
+                        if (priorityList.isEmpty()){
+                            // generatePriorityList(leafState);
+
+                            fullPlan.addAll(leafState.extractPlan());
+                            break;
+                        }
+                        if (leafState.isGoalState()) {
+
+                        }
+
+
+
+                }*/
+
 
                 for (Node agent : leafState.getAgentNodes()) {
                     try{
@@ -220,15 +236,16 @@ public class SearchClient {
                     }catch(NullPointerException e){}
                 }
 
-//              System.err.println(leafState.actionsToString());
-//              System.err.println(((StrategyBestFirst)strategy).h(leafState));
-                System.err.println(leafState);
-                //Thread.sleep(1000);
-//              leafState.getAgentNodes().forEach(n -> System.err.println(leafState.getAgent(n).getCurrentBoxID()));
+//                System.err.println(leafState.actionsToString());
+//                System.err.println(((StrategyBestFirst)strategy).h(leafState));
+//                System.err.println(leafState);
+//                Thread.sleep(1000);
+//                leafState.getAgentNodes().forEach(n -> System.err.println(leafState.getAgent(n).getCurrentBoxID()));
 
                 strategy.addToExplored(leafState);
                 for (Graph n : leafState.getExpandedStates()) {
                     if (!strategy.isExplored(n) && !strategy.inFrontier(n)) {
+                        ((StrategyBestFirst) strategy).h(n);
                         strategy.addToFrontier(n);
                     }
                 }
@@ -288,8 +305,6 @@ public class SearchClient {
     }
 
 
-
-
     public void designateBoxes(Graph graph) {
         List<Node> boxes = graph.getBoxNodes();
         for (Node goal : graph.getGoalNodes()) {
@@ -344,5 +359,34 @@ public class SearchClient {
     }
 
 }
+
+
+   /* public boolean getHelpFromAHomie(Graph state, List<Node> relevantAgents, List<Node> relevantBoxes, List<Node> relevantGoals){
+        for(Node a : relevantAgents){
+            for(Node b : relevantBoxes){
+                Optional<List<Node>> path = state.shortestPath(a,b,false);
+                if(path.isPresent()){
+                    if(path.get().isEmpty()){
+                        return false;
+                    }
+                }else{
+                    return false;
+                }
+            }
+        }
+        for(Node b : relevantBoxes){
+            for(Node g : relevantGoals){
+                Optional<List<Node>> path = state.shortestPath(b,g,false);
+                if(path.isPresent()){
+                    if(path.get().isEmpty()){
+                        return false;
+                    }
+                }else{
+                    return false;
+                }
+            }
+        }
+        return true;
+    }*/
 
 
