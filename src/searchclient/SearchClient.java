@@ -211,21 +211,28 @@ public class SearchClient {
                         if (leafState.isBoxAtGoal(box)) {
                             setNextBoxToAgent(leafState, agent);
                         }
+
                     }
                 }
 
 //                System.err.println(leafState.actionsToString());
 //                System.err.println(((StrategyBestFirst)strategy).h(leafState));
 //                System.err.println(leafState);
-//                Thread.sleep(1000);
+//                Thread.sleep(500);
 //                leafState.getAgentNodes().forEach(n -> System.err.println(leafState.getAgent(n).getCurrentBoxID()));
-
                 strategy.addToExplored(leafState);
-                for (Graph n : leafState.getExpandedStates()) {
-                    if (!strategy.isExplored(n) && !strategy.inFrontier(n)) {
-                        ((StrategyBestFirst) strategy).h(n);
-                        strategy.addToFrontier(n);
-                    }
+                Map<Node, List<Node>> blockingNodes = leafState.blockingNodes();
+                if (blockingNodes.isEmpty()) {
+                    Graph newGraph = leafState.getGraphFromPaths();
+                    strategy.addToFrontier(newGraph);
+                } else {
+                    Graph newGraph = leafState.getBlockedPathGraph(blockingNodes);
+                    strategy.addToFrontier(newGraph);
+//                    for (Graph n : leafState.getExpandedStates()) {
+//                        if (!strategy.isExplored(n) && !strategy.inFrontier(n)) {
+//                            strategy.addToFrontier(n);
+//                        }
+//                    }
                 }
                 iterations++;
             }
@@ -286,16 +293,24 @@ public class SearchClient {
         for (Node goal : graph.getGoalNodes()) {
             int shortest = Integer.MAX_VALUE;
             Node finalBox = null;
+            LinkedList<Node> finalPath = new LinkedList<>();
             for (Node box : boxes) {
                 if (graph.getBox(box).hasSameLetter(graph.getGoal(goal))) {
-                    Optional<List<Node>> path = graph.shortestPath(goal, box, true, null);
+                    Optional<List<Node>> path = graph.shortestPath(goal, box, false, null);
+                    if (!path.isPresent()) {
+                        path = graph.shortestPath(goal, box, true, null);
+                    }
                     if (path.isPresent() && path.get().size() < shortest) {
                         shortest = path.get().size();
                         finalBox = box;
+                        finalPath = new LinkedList<>(path.get());
                     }
                 }
             }
             graph.getBox(finalBox).setDesignatedGoal(goal.getId());
+            finalPath.addFirst(goal);
+            Collections.reverse(finalPath);
+            graph.getBox(finalBox).setCurrentPath(finalPath);
             boxes.remove(finalBox);
         }
     }
@@ -305,10 +320,14 @@ public class SearchClient {
         currentList.add(g.getPriority());
         int shortest = Integer.MAX_VALUE;
         int priority = -1;
-        Node current = null;
+        Node currentBox = null;
+        LinkedList<Node> currentPath = null;
         for (Node box : g.getBoxNodes()) {
-            if (g.getAgent(a).getColor().equals(g.getBox(box).getColor())) {
-                Optional<List<Node>> path = g.shortestPath(a, box, true, null);
+            if (g.getAgent(a).getColor().equals(g.getBox(box).getColor()) && !g.isBoxAtGoal(box)) {
+                Optional<List<Node>> path = g.shortestPath(a, box, false, null);
+                if (!path.isPresent()) {
+                    path = g.shortestPath(a, box, true, null);
+                }
                 if (path.isPresent()) {
                     int currentPriority = -1;
                     for (Priority priority1 : currentList) {
@@ -317,19 +336,23 @@ public class SearchClient {
                         }
                     }
                     if (currentPriority > priority) {
-                        current = box;
+                        currentBox = box;
+                        currentPath = new LinkedList<>(path.get());
                         priority = currentPriority;
                         shortest = path.get().size();
                     }
                     if (path.get().size() < shortest && currentPriority == priority) {
                         shortest = path.get().size();
-                        current = box;
+                        currentBox = box;
+                        currentPath = new LinkedList<>(path.get());
                     }
                 }
             }
         }
-        if(current != null){
-            g.getAgent(a).setCurrentBoxID(g.getBox(current).getBoxID());
+        if(currentBox != null){
+            g.getAgent(a).setCurrentBoxID(g.getBox(currentBox).getBoxID());
+//            Collections.reverse(currentPath);
+            g.getAgent(a).setCurrentPath(currentPath);
         }
     }
 

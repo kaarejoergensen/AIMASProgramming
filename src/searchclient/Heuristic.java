@@ -3,10 +3,7 @@ package searchclient;
 import searchclient.model.Graph;
 import searchclient.model.Node;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public abstract class Heuristic implements Comparator<Graph> {

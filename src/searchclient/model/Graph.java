@@ -90,7 +90,7 @@ public class Graph {
 
         for (Node b : getPriorityBoxNodes()) {
             for (Node a : getAgentNodes()) {
-                if (getAgent(a).getColor().equals(getBox(b).getColor())) {
+                if (getAgent(a).getColor().equals(getBox(b).getColor()) && !priorityAgents.contains(a)) {
                     priorityAgents.add(a);
                 }
             }
@@ -190,6 +190,160 @@ public class Graph {
         return goal.equals(b) && getBox(b).getDesignatedGoal().equals(getGoal(goal).getNodeID());
     }
 
+    public Map<Node, List<Node>> blockingNodes() {
+        Map<Node, List<Node>> result = new HashMap<>();
+        for (Node agentNode : this.getPriorityAgents()) {
+            Agent agent = this.getAgent(agentNode);
+            Node currentBox = this.getAgentsCurrentBox(agentNode);
+            if (this.isBoxAtGoal(currentBox)) {
+                continue;
+            }
+            if (agentNode.getEdges().contains(currentBox.getId())) {
+                Box box = this.getBox(currentBox);
+                for (Node pathNode : box.getCurrentPath()) {
+                    if (!this.canBeMovedTo(pathNode, agent)) {
+                        result.put(pathNode, box.getCurrentPath());
+                        break;
+                    }
+                }
+            } else {
+                for (Node pathNode : agent.getCurrentPath()) {
+                    if (!this.canBeMovedTo(pathNode)) {
+                        result.put(pathNode, agent.getCurrentPath());
+                        break;
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
+    public Graph getGraphFromPaths() {
+        Graph graph = this.childState();
+        for (Node agentNode : graph.getPriorityAgents()) {
+            Agent agent = graph.getAgent(agentNode);
+            Node currentBox = graph.getAgentsCurrentBox(agentNode);
+            if (graph.isBoxAtGoal(currentBox)) {
+                continue;
+            }
+            if (agentNode.getEdges().contains(currentBox.getId())) {
+                Box box = graph.getBox(currentBox);
+                if (boxCanBeMoved(agentNode, currentBox)) {
+                    if (boxShouldBePushed(box, agentNode)) {
+                        Node newBoxNode = box.getCurrentPath().removeFirst();
+                        Command command = new Command(Command.Type.Push, getDir(agentNode, currentBox),
+                                getDir(currentBox, newBoxNode));
+                        graph.actions[Character.getNumericValue(agent.getLetter())] = command;
+                        graph.moveAgent(agentNode, currentBox);
+                        graph.setH(this.h - 3);
+                        graph.moveBox(currentBox, newBoxNode);
+                    } else if (boxShouldBePulled(box, agentNode)) {
+                        Node newBoxNode = box.getCurrentPath().removeFirst();
+                        Node newAgentNode = null;
+                        if (box.getCurrentPath().isEmpty()) {
+                            for (String edge : newBoxNode.getEdges()) {
+                                Node node = graph.getAllNodes().get(edge);
+                                if (!edge.equals(currentBox.getId()) && graph.canBeMovedTo(node)) {
+                                    newAgentNode = node;
+                                }
+                            }
+                        } else {
+                            newAgentNode = box.getCurrentPath().getFirst();
+                        }
+                        if (newAgentNode == null) {
+                            System.err.println();
+                        }
+                        Command command = new Command(Command.Type.Pull, getDir(newBoxNode, newAgentNode),
+                                getDir(newBoxNode, currentBox));
+                        graph.actions[Character.getNumericValue(agent.getLetter())] = command;
+                        graph.moveAgent(agentNode, newAgentNode);
+                        graph.moveBox(currentBox, newBoxNode);
+                        graph.setH(this.h - 3);
+                    }
+                }
+            } else {
+                Node newAgentNode = agent.getCurrentPath().removeFirst();
+                graph.actions[Character.getNumericValue(agent.getLetter())] = new Command(getDir(agentNode, newAgentNode));
+                graph.moveAgent(agentNode, newAgentNode);
+                graph.setH(this.h - 1);
+            }
+        }
+        return graph;
+    }
+
+    public Graph getBlockedPathGraph(Map<Node, List<Node>> blockingPathNodes) {
+        Graph graph = this.childState();
+        for (Node node : blockingPathNodes.keySet()) {
+            Agent agent = graph.getAgent(node);
+            Box box = graph.getBox(node);
+            if (agent != null) {
+                LinkedList<Node> newPath = null;
+                if (agent.getStopBlockingPath().isEmpty()) {
+                    Optional<List<Node>> pathFound = this.findPathToFirstNonBlockingNode(node, blockingPathNodes.get(node));
+                    if (pathFound.isPresent()) {
+                        newPath = new LinkedList<>(pathFound.get());
+                    }
+                } else {
+                    newPath = agent.getStopBlockingPath();
+                }
+                if (newPath != null && !newPath.isEmpty()) {
+                    Node newAgentNode = newPath.removeFirst();
+                    graph.getAgent(node).setStopBlockingPath(newPath);
+                    graph.actions[Character.getNumericValue(agent.getLetter())] = new Command(getDir(node, newAgentNode));
+                    graph.moveAgent(node, newAgentNode);
+                }
+            }
+        }
+        return graph;
+    }
+
+    private Optional<List<Node>> findPathToFirstNonBlockingNode(Node node, List<Node> path) {
+        List<String> visitedNodes = new ArrayList<>();
+        Queue<Node> queue = new LinkedList<>();
+        Map<String, List<Node>> predecessors = new HashMap<>();
+
+        visitedNodes.add(node.getId());
+        queue.add(node);
+        predecessors.put(node.getId(), new ArrayList<>(Collections.singletonList(node)));
+
+        while (!queue.isEmpty()) {
+            Node n = queue.poll();
+
+            for (String edge : n.getEdges()) {
+                Node destinationNode = this.allNodes.get(edge);
+                if (!path.contains(destinationNode) && canBeMovedTo(destinationNode)) {
+                    List<Node> finalList = predecessors.get(n.getId());
+                    finalList.remove(0);
+                    finalList.add(destinationNode);
+                    return Optional.of(finalList);
+                }
+                if (!visitedNodes.contains(edge) && canBeMovedTo(destinationNode)) {
+                    queue.add(destinationNode);
+                    visitedNodes.add(edge);
+                    List<Node> predecessorList = new ArrayList<>();
+                    if (predecessors.containsKey(n.getId())) {
+                        predecessorList.addAll(predecessors.get(n.getId()));
+                    }
+                    predecessorList.add(destinationNode);
+                    predecessors.put(edge, predecessorList);
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
+    private boolean boxShouldBePushed(Box box, Node agentNode) {
+//        List<Node> edges = boxNode.getEdges().stream()
+//                .map(s -> graph.getAllNodes().get(s))
+//                .filter(graph::canBeMovedTo)
+//                .collect(Collectors.toList());
+        return !box.getCurrentPath().getFirst().equals(agentNode);
+    }
+
+    private boolean boxShouldBePulled(Box box, Node agentNode) {
+        return box.getCurrentPath().getFirst().equals(agentNode);
+    }
+
     public List<Graph> getExpandedStates() {
         List<Graph> expandedStates = new ArrayList<>();
         for (Node agentNode : this.getAgentNodes()) {
@@ -240,9 +394,6 @@ public class Graph {
     private Graph newPullBoxGraph(Node oldBoxNode, Node oldAgentNode, Node newAgentNode) {
         Command command = new Command(Command.Type.Pull, getDir(oldAgentNode, newAgentNode),
                 getDir(oldAgentNode, oldBoxNode));
-        if (command.dir1.equals(Command.Dir.E) && command.dir2.equals(Command.Dir.E)) {
-            System.out.println();
-        }
         Graph graph = this.childState();
         graph.actions[Character.getNumericValue(this.agents.get(oldAgentNode.getId()).getLetter())] = command;
         graph.moveAgent(oldAgentNode, newAgentNode);
@@ -367,11 +518,8 @@ public class Graph {
     }
 
     public Optional<List<Node>> shortestPath(Node fromNode, Node toNode, boolean ignoreObstaclesOnPath, Agent ignoreAgent) {
-        if (fromNode == null || toNode == null || fromNode.equals(toNode)) {
+        if (fromNode == null || toNode == null || fromNode.equals(toNode) || fromNode.getEdges().contains(toNode.getId())) {
             return Optional.of(new ArrayList<>());
-        }
-        if (fromNode.getEdges().contains(toNode.getId())) {
-            return Optional.of(Collections.singletonList(fromNode));
         }
         if (getGoal(toNode) != null && !canBeMovedTo(toNode, ignoreAgent)) {
             return Optional.empty();
@@ -391,6 +539,7 @@ public class Graph {
                 Node destinationNode = this.allNodes.get(edge);
                 if (destinationNode.equals(toNode)) {
                     List<Node> finalList = predecessors.get(n.getId());
+                    finalList.remove(0);
                     return Optional.of(finalList);
                 }
                 if (!visitedNodes.contains(edge) &&
@@ -483,7 +632,7 @@ public class Graph {
     public Node getAgentsCurrentBox(Node n ){
         for(Node g : getBoxNodes()){
             if (getAgent(n) == null || getAgent(n).getCurrentBoxID() == null || getBox(g) == null || getBox(g).getBoxID() == null) {
-                System.out.println();
+                System.err.println();
             }
             if(getAgent(n).getCurrentBoxID().equals(getBox(g).getBoxID()))
                 return g;
@@ -493,5 +642,13 @@ public class Graph {
 
     public Map<String, Agent> getAgents() {
         return agents;
+    }
+
+    public Map<String, Box> getBoxes() {
+        return boxes;
+    }
+
+    public Map<String, Goal> getGoals() {
+        return goals;
     }
 }
