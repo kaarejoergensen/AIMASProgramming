@@ -6,6 +6,7 @@ import searchclient.Heuristic.WeightedAStar;
 import searchclient.Strategy.StrategyBFS;
 import searchclient.Strategy.StrategyBestFirst;
 import searchclient.Strategy.StrategyDFS;
+import searchclient.model.BlockingPair;
 import searchclient.model.Elements.Agent;
 import searchclient.model.Elements.Box;
 import searchclient.model.Elements.Goal;
@@ -62,7 +63,6 @@ public class SearchClient {
         Map<String, Box> boxes = new HashMap<>();
         Map<String, Goal> goals = new HashMap<>();
 
-        int count = 0;
         for (String string : strings) {
             for (int col = 0; col < string.length(); col++) {
                 char chr = string.charAt(col);
@@ -70,10 +70,10 @@ public class SearchClient {
                     Node node = null;
                     if ('0' <= chr && chr <= '9') {
                         node = new Node(String.valueOf(col) + "," + String.valueOf(row), col, row);
-                        agents.put(node.getId(), new Agent(node.getId(), chr, colorMap.get(chr)));
+                        agents.put(node.getId(), new Agent(node.getId(), chr, colorMap.get(chr), node.getId()));
                     } else if ('A' <= chr && chr <= 'Z') {
                         node = new Node(String.valueOf(col) + "," + String.valueOf(row), col, row);
-                        boxes.put(node.getId(), new Box(node.getId(), chr, colorMap.get(chr)));
+                        boxes.put(node.getId(), new Box(node.getId(), chr, colorMap.get(chr), node.getId()));
                     } else if ('a' <= chr && chr <= 'z') {
                         node = new Node(String.valueOf(col) + "," + String.valueOf(row), col, row);
                         goals.put(node.getId(), new Goal(node.getId(), chr));
@@ -92,7 +92,6 @@ public class SearchClient {
                         node.addEdge(tiles[row][col - 1].getId());
                         tiles[row][col - 1].addEdge(node.getId());
                     }
-                    count++;
                 }
             }
             row++;
@@ -167,7 +166,7 @@ public class SearchClient {
         }
     }
 
-    private List<Graph> Search(Strategy strategy) throws Exception {
+    private List<Graph> Search(Strategy strategy) throws InterruptedException {
         System.err.format("Search starting with strategy %s.\n", strategy.toString());
 
         List<Graph> fullPlan = new LinkedList<>();
@@ -205,29 +204,34 @@ public class SearchClient {
                 }
 
                 for (Node agent : leafState.getAgentNodes()) {
-                    if (leafState.getAgent(agent).hasCurrentBoxID()) {
+                    if (leafState.getAgent(agent).hasCurrentTarget()) {
                         Node box = leafState.getAgentsCurrentBox(agent);
-
                         if (leafState.isBoxAtGoal(box)) {
                             setNextBoxToAgent(leafState, agent);
                         }
-
+                    } else {
+                        setNextBoxToAgent(leafState, agent);
                     }
                 }
 
 //                System.err.println(leafState.actionsToString());
 //                System.err.println(((StrategyBestFirst)strategy).h(leafState));
-//                System.err.println(leafState);
-//                Thread.sleep(500);
+                System.err.println(leafState);
+//                Thread.sleep(250);
 //                leafState.getAgentNodes().forEach(n -> System.err.println(leafState.getAgent(n).getCurrentBoxID()));
+//                System.out.println(leafState.actionsToString());
                 strategy.addToExplored(leafState);
-                Map<Node, List<Node>> blockingNodes = leafState.blockingNodes();
+                Map<BlockingPair, List<Node>> blockingNodes = leafState.blockingNodes();
                 if (blockingNodes.isEmpty()) {
+                    System.err.println("NON-BLOCKING");
                     Graph newGraph = leafState.getGraphFromPaths();
                     strategy.addToFrontier(newGraph);
                 } else {
+                    System.err.println("BLOCKING");
                     Graph newGraph = leafState.getBlockedPathGraph(blockingNodes);
-                    strategy.addToFrontier(newGraph);
+                    if (!strategy.isExplored(newGraph ) && !strategy.inFrontier(newGraph )) {
+                        strategy.addToFrontier(newGraph );
+                    }
 //                    for (Graph n : leafState.getExpandedStates()) {
 //                        if (!strategy.isExplored(n) && !strategy.inFrontier(n)) {
 //                            strategy.addToFrontier(n);
@@ -255,8 +259,7 @@ public class SearchClient {
             try {
                 priorityMap.put(graph.getGoal(goal).getNodeID(), 0);
             } catch (NullPointerException e) {
-                //
-                System.err.println("Box with id: " + graph.getBox(boxNode).getBoxID() + " don't have any goals :(");
+//                System.err.println("Box with id: " + graph.getBox(boxNode).getID() + " don't have any goals :(");
             }
 
             List<Node> path = graph.shortestPath(boxNode, goal, false, null)
@@ -284,7 +287,7 @@ public class SearchClient {
         }
 
         priorityList.addAll(priorities);
-        System.err.println("PRIO LIST BRO: " + Arrays.toString(priorityList.toArray()));
+//        System.err.println("PRIO LIST BRO: " + Arrays.toString(priorityList.toArray()));
     }
 
 
@@ -307,7 +310,7 @@ public class SearchClient {
                     }
                 }
             }
-            graph.getBox(finalBox).setDesignatedGoal(goal.getId());
+            graph.getBox(finalBox).setCurrentTargetId(goal.getId());
             finalPath.addFirst(goal);
             Collections.reverse(finalPath);
             graph.getBox(finalBox).setCurrentPath(finalPath);
@@ -331,7 +334,7 @@ public class SearchClient {
                 if (path.isPresent()) {
                     int currentPriority = -1;
                     for (Priority priority1 : currentList) {
-                        if (priority1.getIDs().contains(g.getBox(box).getDesignatedGoal())) {
+                        if (priority1.getIDs().contains(g.getBox(box).getCurrentTargetId())) {
                             currentPriority = priority1.getPriority();
                         }
                     }
@@ -350,7 +353,7 @@ public class SearchClient {
             }
         }
         if(currentBox != null){
-            g.getAgent(a).setCurrentBoxID(g.getBox(currentBox).getBoxID());
+            g.getAgent(a).setCurrentTargetId(g.getBox(currentBox).getID());
 //            Collections.reverse(currentPath);
             g.getAgent(a).setCurrentPath(currentPath);
         }

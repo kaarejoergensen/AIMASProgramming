@@ -83,19 +83,25 @@ public class Command {
     }
 
     public Command(Dir d) {
+        if (d == null) {
+            throw new IllegalArgumentException("d cannot be null");
+        }
         this.actionType = Type.Move;
         this.dir1 = d;
         this.dir2 = null;
     }
 
     public Command(Type t, Dir d1, Dir d2) {
+        if (t == null || d1 == null || d2 == null) {
+            throw new IllegalArgumentException("None of the arguments can be null");
+        }
         this.actionType = t;
         this.dir1 = d1;
         this.dir2 = d2;
     }
 
     public boolean isNoOp() {
-        return this.actionType != null && this.actionType.equals(Type.NoOp);
+        return this.actionType.equals(Type.NoOp);
     }
 
     @Override
