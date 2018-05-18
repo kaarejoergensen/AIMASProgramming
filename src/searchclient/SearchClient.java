@@ -210,22 +210,6 @@ public class SearchClient {
 
 
 
-                    /*if (leafState.isSubGoalState()) {
-                        if (priorityList.isEmpty()){
-                            // generatePriorityList(leafState);
-
-                            fullPlan.addAll(leafState.extractPlan());
-                            break;
-                        }
-                        if (leafState.isGoalState()) {
-
-                        }
-
-
-
-                }*/
-
-
                 for (Node agent : leafState.getAgentNodes()) {
                     try{
                         Node box = leafState.getAgentsCurrentBox(agent);
@@ -238,9 +222,9 @@ public class SearchClient {
 
 //                System.err.println(leafState.actionsToString());
 //                System.err.println(((StrategyBestFirst)strategy).h(leafState));
-//                System.err.println(leafState);
-//                Thread.sleep(1000);
-//                leafState.getAgentNodes().forEach(n -> System.err.println(leafState.getAgent(n).getCurrentBoxID()));
+//                  System.err.println(leafState);
+//                  Thread.sleep(1000);
+//                  leafState.getAgentNodes().forEach(n -> System.err.println(leafState.getAgent(n).getCurrentBoxID()));
 
                 strategy.addToExplored(leafState);
                 for (Graph n : leafState.getExpandedStates()) {
@@ -331,9 +315,12 @@ public class SearchClient {
         int shortest = Integer.MAX_VALUE;
         int priority = -1;
         Node current = null;
+        Agent tempAgent = g.getAgent(a);
+
         for (Node box : g.getBoxNodes()) {
-            if (g.getAgent(a).getColor().equals(g.getBox(box).getColor())) {
+            if (tempAgent.getColor().equals(g.getBox(box).getColor())) {
                 Optional<List<Node>> path = g.shortestPath(a, box, true, null);
+
                 if (path.isPresent()) {
                     int currentPriority = -1;
                     for (Priority priority1 : currentList) {
@@ -353,40 +340,17 @@ public class SearchClient {
                 }
             }
         }
+
         if(current != null){
-            g.getAgent(a).setCurrentBoxID(g.getBox(current).getBoxID());
+            tempAgent.setCurrentBoxID(g.getBox(current).getBoxID());
+        }else{
+            tempAgent.setCurrentBoxID(null);
         }
+
+
     }
 
 }
 
-
-   /* public boolean getHelpFromAHomie(Graph state, List<Node> relevantAgents, List<Node> relevantBoxes, List<Node> relevantGoals){
-        for(Node a : relevantAgents){
-            for(Node b : relevantBoxes){
-                Optional<List<Node>> path = state.shortestPath(a,b,false);
-                if(path.isPresent()){
-                    if(path.get().isEmpty()){
-                        return false;
-                    }
-                }else{
-                    return false;
-                }
-            }
-        }
-        for(Node b : relevantBoxes){
-            for(Node g : relevantGoals){
-                Optional<List<Node>> path = state.shortestPath(b,g,false);
-                if(path.isPresent()){
-                    if(path.get().isEmpty()){
-                        return false;
-                    }
-                }else{
-                    return false;
-                }
-            }
-        }
-        return true;
-    }*/
 
 

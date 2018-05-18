@@ -22,7 +22,7 @@ public class Graph {
     private Priority priority;
     private int h;
 
-    private int _hash = 0;
+    private int _hash = -1;
 
     public Graph(Graph parent, int rows, int columns, Map<String, Node> nodes,
                  Map<String, Agent> agents, Map<String, Box> boxes, Map<String, Goal> goals) {
@@ -211,6 +211,7 @@ public class Graph {
                 }
             }
         }
+
         return expandedStates;
     }
 
@@ -455,16 +456,18 @@ public class Graph {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Graph graph = (Graph) o;
-        return Objects.equals(getAgentNodes(), getBoxNodes());
+        return this.hashCode() == graph.hashCode();
     }
 
     @Override
     public int hashCode() {
-        if (this._hash == 0) {
-            this._hash = Objects.hash(getAgentNodes(), getBoxNodes());
+        if (this._hash == -1) {
+            this._hash = Objects.hash(getAgentNodes().toString(), getBoxNodes().toString());
         }
         return this._hash;
     }
+
+
 
     public void setPriority(Priority priority) {
         this.priority = priority;

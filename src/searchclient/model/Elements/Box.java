@@ -31,7 +31,7 @@ public class Box extends ColeredElement {
 
     public boolean checkIfPathIsClear(Graph g){
         for(Node n : pathToGoal){
-            if(g.getBox(n) != null && g.getBox(n).getBoxID() != this.getBoxID()) return false;
+            if(g.getBox(n) != null && g.getBox(n).getBoxID() != this.getBoxID() && g.getBox(n).hasSameColor(this)) return false;
         }
         return true;
     }

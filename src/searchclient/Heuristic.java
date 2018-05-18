@@ -35,7 +35,11 @@ public abstract class Heuristic implements Comparator<Graph> {
         int result = 0;
 
         for (Node agentNode : graph.getPriorityAgents()) {
+
+            if(graph.getAgent(agentNode).getCurrentBoxID() == null) return 0;
             Node currentBox = graph.getAgentsCurrentBox(agentNode);
+
+
             Box tmpBox = graph.getBox(currentBox);
             if(tmpBox.checkIfPathIsClear(graph)){
                 List<Node> path = tmpBox.getPathToGoal();
@@ -52,7 +56,7 @@ public abstract class Heuristic implements Comparator<Graph> {
                         break;
                     }
                 }
-                result += graph.shortestPath(agentNode, blockingBox, true, graph.getAgent(agentNode)).map(List::size).orElse(200);
+                result += graph.shortestPath(agentNode, blockingBox, true, graph.getAgent(agentNode)).map(List::size).orElse(300);
 
                 tmpBox.updatePathToGoal(graph);
             }
@@ -75,9 +79,10 @@ public abstract class Heuristic implements Comparator<Graph> {
                     Optional<List<Node>> path = graph.shortestPath(boxNode, goal, true, null);
                     result += path.map(p -> 3 * p.size()).orElse(100);
                 }else{
+
                     for (Node bn : notCurrentBoxes) {
                         if(tempBox.getPathToGoal().contains(bn)) {
-                            result += 100;
+                            result += 70;
                         }
                     }
 
