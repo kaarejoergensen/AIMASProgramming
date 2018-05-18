@@ -217,26 +217,22 @@ public class SearchClient {
 //                System.err.println(leafState.actionsToString());
 //                System.err.println(((StrategyBestFirst)strategy).h(leafState));
                 System.err.println(leafState);
-//                Thread.sleep(250);
+                Thread.sleep(500);
 //                leafState.getAgentNodes().forEach(n -> System.err.println(leafState.getAgent(n).getCurrentBoxID()));
 //                System.out.println(leafState.actionsToString());
                 strategy.addToExplored(leafState);
                 Map<BlockingPair, List<Node>> blockingNodes = leafState.blockingNodes();
+                Graph newGraph;
                 if (blockingNodes.isEmpty()) {
-                    System.err.println("NON-BLOCKING");
-                    Graph newGraph = leafState.getGraphFromPaths();
+//                    System.err.println("NON-BLOCKING");
+                    newGraph = leafState.getGraphFromPaths();
                     strategy.addToFrontier(newGraph);
                 } else {
-                    System.err.println("BLOCKING");
-                    Graph newGraph = leafState.getBlockedPathGraph(blockingNodes);
-                    if (!strategy.isExplored(newGraph ) && !strategy.inFrontier(newGraph )) {
-                        strategy.addToFrontier(newGraph );
-                    }
-//                    for (Graph n : leafState.getExpandedStates()) {
-//                        if (!strategy.isExplored(n) && !strategy.inFrontier(n)) {
-//                            strategy.addToFrontier(n);
-//                        }
-//                    }
+//                    System.err.println("BLOCKING");
+                    newGraph = leafState.getBlockedPathGraph(blockingNodes);
+                }
+                if (!strategy.isExplored(newGraph ) && !strategy.inFrontier(newGraph )) {
+                    strategy.addToFrontier(newGraph );
                 }
                 iterations++;
             }

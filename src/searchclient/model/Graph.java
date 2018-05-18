@@ -53,7 +53,6 @@ public class Graph {
     }
 
 
-
     public int getH() {
         return h;
     }
@@ -77,13 +76,13 @@ public class Graph {
 
     public List<Node> getPriorityBoxNodes() {
         List<Node> priorityBoxes = new ArrayList<>();
-            for (Node g : getPriorityGoalNodes()) {
-                for(Node b : getBoxNodes()){
-                    if(getBox(b).getCurrentTargetId() != null && getBox(b).getCurrentTargetId().equals(g.getId())){
-                        priorityBoxes.add(b);
-                    }
+        for (Node g : getPriorityGoalNodes()) {
+            for (Node b : getBoxNodes()) {
+                if (getBox(b).getCurrentTargetId() != null && getBox(b).getCurrentTargetId().equals(g.getId())) {
+                    priorityBoxes.add(b);
                 }
             }
+        }
         return priorityBoxes;
     }
 
@@ -187,7 +186,7 @@ public class Graph {
         return goalNodes.equals(boxNodes) && goalNodes.stream().allMatch(g -> getGoal(g).hasSameLetter(getBox(g)));
     }
 
-    public boolean isBoxAtGoal(Node b){
+    public boolean isBoxAtGoal(Node b) {
         Node goal = getDesignatedGoal(b);
         if (goal == null || getBox(b).getCurrentTargetId() == null) {
             return false;
@@ -211,7 +210,8 @@ public class Graph {
                             break;
                         }
                         Node pathNode = box.getCurrentPath().get(i);
-                        if (!this.canBeMovedTo(pathNode, agent) && (this.getBox(pathNode) == null || this.getBox(pathNode).getStopBlockingPath().isEmpty())) {
+                        if (!this.canBeMovedTo(pathNode, agent) &&
+                                (this.getAgent(pathNode) == null || !this.getAgent(pathNode).isCurrentlyMovingBlockingBox())) {
                             result.put(new BlockingPair(pathNode, currentBox), box.getCurrentPath());
                             break;
                         }
@@ -224,7 +224,8 @@ public class Graph {
                             break;
                         }
                         Node pathNode = agent.getCurrentPath().get(i);
-                        if (!this.canBeMovedTo(pathNode)) {
+                        if (!this.canBeMovedTo(pathNode) &&
+                                (this.getAgent(pathNode) == null || !this.getAgent(pathNode).isCurrentlyMovingBlockingBox())) {
                             result.put(new BlockingPair(pathNode, agentNode), agent.getCurrentPath());
                             break;
                         }
@@ -241,57 +242,23 @@ public class Graph {
     public Graph getGraphFromPaths() {
         Graph graph = this.childState();
         for (Node agentNode : graph.getPriorityAgents()) {
-            Agent agent = graph.getAgent(agentNode);
             Node currentBox = graph.getAgentsCurrentBox(agentNode);
             if (graph.isBoxAtGoal(currentBox)) {
                 continue;
             }
-            if (agentNode.getEdges().contains(currentBox.getId())) {
-                Box box = graph.getBox(currentBox);
-                if (boxCanBeMoved(agentNode, currentBox)) {
-                    if (!box.getCurrentPath().isEmpty() && boxShouldBePushed(box, agentNode)) {
-                        Node newBoxNode = box.getCurrentPath().removeFirst();
-                        Command command = new Command(Command.Type.Push, getDir(agentNode, currentBox),
-                                getDir(currentBox, newBoxNode));
-                        graph.actions[Character.getNumericValue(agent.getLetter())] = command;
-                        graph.moveAgent(agentNode, currentBox);
-                        graph.setH(this.h - 3);
-                        graph.moveBox(currentBox, newBoxNode);
-                    } else if (!box.getCurrentPath().isEmpty() && boxShouldBePulled(box, agentNode)) {
-                        Node newBoxNode = box.getCurrentPath().removeFirst();
-                        Node newAgentNode = null;
-                        for (String edge : newBoxNode.getEdges()) {
-                            Node node = graph.getAllNodes().get(edge);
-                            if (!edge.equals(currentBox.getId()) && graph.canBeMovedTo(node)) {
-                                newAgentNode = node;
-                            }
-                        }
-                        if (newAgentNode == null) {
-                            newAgentNode = box.getCurrentPath().getFirst();
-                        }
-                        Command command = new Command(Command.Type.Pull, getDir(newBoxNode, newAgentNode),
-                                getDir(newBoxNode, currentBox));
-                        graph.actions[Character.getNumericValue(agent.getLetter())] = command;
-                        graph.moveAgent(agentNode, newAgentNode);
-                        graph.moveBox(currentBox, newBoxNode);
-                        graph.setH(this.h - 3);
-                    }
-                }
-            } else if (!agent.getCurrentPath().isEmpty()) {
-                if (graph.canBeMovedTo(agent.getCurrentPath().getFirst(), agent)) {
-                    Node newAgentNode = agent.getCurrentPath().removeFirst();
-                    try {
-                        graph.actions[Character.getNumericValue(agent.getLetter())] = new Command(getDir(agentNode, newAgentNode));
-                    } catch (IllegalArgumentException e) {
-                        e.printStackTrace();
-                    }
-
-                    graph.moveAgent(agentNode, newAgentNode);
-                    graph.setH(this.h - 1);
-                }
-            }
+            graph.moveAgentsAndBoxes(agentNode, currentBox,
+                    graph.getBox(currentBox).getCurrentPath(), graph.getAgent(agentNode).getCurrentPath());
         }
         return graph;
+    }
+
+    private Node getCurrentlyBlockingBox(String id) {
+        for (Box box : this.getBoxes().values()) {
+            if (box.getID().equals(id)) {
+                return this.getAllNodes().get(box.getNodeID());
+            }
+        }
+        return null;
     }
 
     public Graph getBlockedPathGraph(Map<BlockingPair, List<Node>> blockingPathNodes) {
@@ -338,7 +305,13 @@ public class Graph {
                             graph.actions[Character.getNumericValue(element.getLetter())] = new Command(getDir(node, newAgentNode));
                             graph.moveAgent(node, newAgentNode);
                         } else {
-                            
+                            graph.getBox(node).setStopBlockingPath(newPath);
+                            NodePathPair nodePathPair = findClosestAgent(node);
+                            if (nodePathPair != null) {
+                                graph.getAgent(nodePathPair.getNode()).setStopBlockingPath(nodePathPair.getPath());
+                                graph.getAgent(nodePathPair.getNode()).setCurrentlyMovingBlockingBox(true);
+                                graph.moveAgentsAndBoxes(nodePathPair.getNode(), node, newPath, nodePathPair.getPath());
+                            }
                         }
                     }
                 }
@@ -353,6 +326,78 @@ public class Graph {
             }
         }
         return graph;
+    }
+
+    private void moveAgentsAndBoxes(Node agentNode, Node currentBox, LinkedList<Node> boxPath, LinkedList<Node> agentPath) {
+        Agent agent = this.getAgent(agentNode);
+        Node newAgentNode = null;
+        if (agentNode.getEdges().contains(currentBox.getId())) {
+            if (boxCanBeMoved(agentNode, currentBox)) {
+                if (!boxPath.isEmpty() && boxShouldBePushed(boxPath, agentNode)) {
+                    Node newBoxNode = boxPath.removeFirst();
+                    Command command = new Command(Command.Type.Push, getDir(agentNode, currentBox),
+                            getDir(currentBox, newBoxNode));
+                    this.actions[Character.getNumericValue(agent.getLetter())] = command;
+                    this.moveAgent(agentNode, currentBox);
+                    this.setH(this.h - 3);
+                    this.moveBox(currentBox, newBoxNode);
+                    newAgentNode = currentBox;
+                } else if (!boxPath.isEmpty() && boxShouldBePulled(boxPath, agentNode)) {
+                    Node newBoxNode = boxPath.removeFirst();
+                    for (String edge : newBoxNode.getEdges()) {
+                        Node node = this.getAllNodes().get(edge);
+                        if (!edge.equals(currentBox.getId()) && this.canBeMovedTo(node)) {
+                            newAgentNode = node;
+                        }
+                    }
+                    if (newAgentNode == null && !boxPath.isEmpty()) {
+                        newAgentNode = boxPath.getFirst();
+                    }
+                    Command command = new Command(Command.Type.Pull, getDir(newBoxNode, newAgentNode),
+                            getDir(newBoxNode, currentBox));
+                    this.actions[Character.getNumericValue(agent.getLetter())] = command;
+                    this.moveAgent(agentNode, newAgentNode);
+                    this.moveBox(currentBox, newBoxNode);
+                    this.setH(this.h - 3);
+                }
+            }
+        } else {
+            if (!agentPath.isEmpty()) {
+                if (this.canBeMovedTo(agentPath.getFirst(), agent)) {
+                    newAgentNode = agentPath.removeFirst();
+                    try {
+                        this.actions[Character.getNumericValue(agent.getLetter())] = new Command(getDir(agentNode, newAgentNode));
+                    } catch (IllegalArgumentException e) {
+                        e.printStackTrace();
+                    }
+                    this.moveAgent(agentNode, newAgentNode);
+                    this.setH(this.h - 1);
+                }
+            }
+        }
+        if (boxPath.isEmpty()) {
+            this.getAgent(newAgentNode).setCurrentlyMovingBlockingBox(false);
+        }
+    }
+
+    private NodePathPair findClosestAgent(Node box) {
+        NodePathPair agent = findClosestAgentHelper(box, false);
+        return agent != null ? agent : findClosestAgentHelper(box, true);
+    }
+
+    private NodePathPair findClosestAgentHelper(Node box, boolean ignoreObstacles) {
+        int shortest = Integer.MAX_VALUE;
+        NodePathPair finalAgentNode = null;
+        for (Node agentNode : this.getAgentNodes()) {
+            if (this.getAgent(agentNode).hasSameColor(this.getBox(box))) {
+                Optional<List<Node>> path = this.shortestPath(agentNode, box, ignoreObstacles, this.getAgent(agentNode));
+                if (path.isPresent() && path.get().size() < shortest) {
+                    finalAgentNode = new NodePathPair(agentNode, new LinkedList<>(path.get()));
+                    shortest = path.get().size();
+                }
+            }
+        }
+        return finalAgentNode;
     }
 
     private Optional<List<Node>> findPathToFirstNonBlockingNode(Node node, List<Node> path) {
@@ -390,16 +435,16 @@ public class Graph {
         return Optional.empty();
     }
 
-    private boolean boxShouldBePushed(Box box, Node agentNode) {
+    private boolean boxShouldBePushed(LinkedList<Node> path, Node agentNode) {
 //        List<Node> edges = boxNode.getEdges().stream()
 //                .map(s -> graph.getAllNodes().get(s))
 //                .filter(graph::canBeMovedTo)
 //                .collect(Collectors.toList());
-        return !box.getCurrentPath().getFirst().equals(agentNode);
+        return !path.getFirst().equals(agentNode);
     }
 
-    private boolean boxShouldBePulled(Box box, Node agentNode) {
-        return box.getCurrentPath().getFirst().equals(agentNode);
+    private boolean boxShouldBePulled(LinkedList<Node> path, Node agentNode) {
+        return path.getFirst().equals(agentNode);
     }
 
     public List<Graph> getExpandedStates() {
@@ -683,16 +728,16 @@ public class Graph {
         return priority;
     }
 
-    public Node getDesignatedGoal(Node n){
+    public Node getDesignatedGoal(Node n) {
         return this.getAllNodes().get(getBox(n).getCurrentTargetId());
     }
 
-    public Node getAgentsCurrentBox(Node n ){
-        for(Node g : getBoxNodes()){
+    public Node getAgentsCurrentBox(Node n) {
+        for (Node g : getBoxNodes()) {
             if (getAgent(n) == null || getAgent(n).getCurrentTargetId() == null || getBox(g) == null || getBox(g).getID() == null) {
                 return null;
             }
-            if(getAgent(n).getCurrentTargetId().equals(getBox(g).getID()))
+            if (getAgent(n).getCurrentTargetId().equals(getBox(g).getID()))
                 return g;
         }
         return null;
